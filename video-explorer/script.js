@@ -63,12 +63,12 @@ async function collectAndRender(a, b, c) {
     const d = document.createDocumentFragment(),
         e = document.createElement("div");
     e.className = "folder is-loading";
+    e.tabIndex = 0;
     const f = document.createElement("div");
     f.className = "folder__header", f.textContent = a.name, e.append(f);
     const g = document.createElement("div");
-    g.className = "folder__content", g.style.display = "none", e.append(g), e.addEventListener("click", a => {
-        a.target.closest(".card") || toggleContent(g), a.stopPropagation()
-    });
+    g.className = "folder__content", g.style.display = "none", e.append(g)
+
     let h;
     try {
         h = await fetch(a.path, {
@@ -107,9 +107,9 @@ async function collectAndRender(a, b, c) {
         b.dataset.folder = a.path + ".thumbnails/";
         k.forEach(c => {
             const d = document.createElement("div");
-            d.className = "card", d.onclick = a => {
-                a.stopPropagation(), window.open(c.path, "_blank")
-            };
+            d.tabIndex = 0;
+            d.dataset.path = c.path;
+            d.className = "card"
             const e = document.createElement("img");
             e.className = "thumb loading";
             e.dataset.video = c.name;
@@ -167,3 +167,124 @@ async function renderAll() {
     }, "", a)
 }
 renderAll();
+
+
+/* Listen for events */
+
+document.addEventListener("click", ev => {
+  const folderEl = ev.target.closest(".folder");
+  if (!folderEl || ev.target.closest(".card")) return;
+  const content = folderEl.querySelector(".folder__content");
+  if (content) toggleContent(content);
+});
+
+document.addEventListener("keydown", ev => {
+  if (ev.key !== "Enter" && ev.key !== " ") return;
+  const folderEl = document.activeElement.closest(".folder");
+  if (!folderEl) return;
+  const content = folderEl.querySelector(".folder__content");
+  if (content) {
+    toggleContent(content);
+    ev.preventDefault();
+  }
+});
+
+document.addEventListener("click", ev => {
+  const cardEl = ev.target.closest(".card");
+  if (!cardEl) return;
+  ev.stopPropagation();
+  window.open(cardEl.dataset.path, "_blank");
+});
+
+document.addEventListener("keydown", ev => {
+  if (ev.key !== "Enter" && ev.key !== " ") return;
+  const cardEl = document.activeElement.closest(".card");
+  if (!cardEl) return;
+  ev.preventDefault();
+  window.open(cardEl.dataset.path, "_blank");
+});
+
+
+/* Keyboard Shorthands */
+
+function moveFocusSibling(direction) {
+  const container = document.getElementById('container');
+  const active = document.activeElement;
+
+  if (!active.classList.contains('folder') && !active.classList.contains('card')) {
+    const topItems = Array.from(container.children)
+      .filter(el => el.classList.contains('folder'));
+    if (!topItems.length) return;
+    const idx = direction > 0 ? 0 : topItems.length - 1;
+    topItems[idx].focus();
+    return;
+  }
+
+  let group;
+  if (active.classList.contains('card')) {
+    group = active.parentElement;
+  } else {
+    group = active.closest('.subfolders') || container;
+  }
+
+  const siblings = Array.from(group.children)
+    .filter(el => el.classList.contains('folder') || el.classList.contains('card'));
+  if (!siblings.length) return;
+
+  let idx = siblings.indexOf(active);
+  idx = (idx + direction + siblings.length) % siblings.length;
+  siblings[idx].focus();
+}
+
+function goDeeper() {
+  const active = document.activeElement;
+  if (!active.classList.contains('folder')) return;
+
+  const content = active.querySelector('.folder__content');
+  if (!content || content.style.display === 'none') return;
+
+  requestAnimationFrame(() => {
+    const childContainer = active.querySelector('.subfolders, .grid');
+    if (!childContainer) return;
+    const next = Array.from(childContainer.children)
+      .find(el => el.classList.contains('folder') || el.classList.contains('card'));
+    if (next) next.focus();
+  });
+}
+
+function goUp() {
+  const active = document.activeElement;
+  if (active.classList.contains('card')) {
+    const parentFolder = active.closest('.grid')?.closest('.folder');
+    if (parentFolder) parentFolder.focus();
+    return;
+  }
+  if (active.classList.contains('folder')) {
+    const parentFolder = active.closest('.subfolders')?.closest('.folder');
+    if (parentFolder) parentFolder.focus();
+  }
+}
+
+document.addEventListener('keydown', e => {
+  switch (e.key) {
+    case 'ArrowDown':
+      moveFocusSibling(1);
+      e.preventDefault();
+      break;
+    case 'ArrowUp':
+      moveFocusSibling(-1);
+      e.preventDefault();
+      break;
+    case 'ArrowRight':
+      goDeeper();
+      e.preventDefault();
+      break;
+    case 'ArrowLeft':
+      goUp();
+      e.preventDefault();
+      break;
+    default:
+      break;
+  }
+});
+
