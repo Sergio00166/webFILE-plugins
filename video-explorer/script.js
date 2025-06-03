@@ -253,18 +253,17 @@ function goUp() {
   }
 }
 
-document.addEventListener('keydown', e => {
-  const acciones = {
+const actions = {
     ArrowDown: () => moveFocusSibling(1),
     ArrowUp: () => moveFocusSibling(-1),
     ArrowRight: goDeeper,
     ArrowLeft: goUp,
     q: goBack
-  };
+};
 
-  if (acciones[e.key]) {
-    acciones[e.key]();
-    if (e.key !== 'q') e.preventDefault();
-  }
+document.addEventListener('keydown', e => {
+    if (acciones[e.key]) {
+        acciones[e.key]();
+    }
 });
 
