@@ -172,14 +172,28 @@ renderAll();
 /* Listen for events */
 
 document.addEventListener("click", ev => {
+  const cardEl = ev.target.closest(".card");
+  if (cardEl) {
+    ev.stopPropagation();
+    window.open(cardEl.dataset.path, "_blank");
+    return;
+  }
   const folderEl = ev.target.closest(".folder");
-  if (!folderEl || ev.target.closest(".card")) return;
+  if (!folderEl) return;
   const content = folderEl.querySelector(".folder__content");
   if (content) toggleContent(content);
 });
 
 document.addEventListener("keydown", ev => {
   if (ev.key !== "Enter" && ev.key !== " ") return;
+
+  const cardEl = document.activeElement.closest(".card");
+  if (cardEl) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    window.open(cardEl.dataset.path, "_blank");
+    return;
+  }
   const folderEl = document.activeElement.closest(".folder");
   if (!folderEl) return;
   const content = folderEl.querySelector(".folder__content");
@@ -189,21 +203,6 @@ document.addEventListener("keydown", ev => {
   }
 });
 
-document.addEventListener("click", ev => {
-  const cardEl = ev.target.closest(".card");
-  if (!cardEl) return;
-  ev.stopPropagation();
-  window.open(cardEl.dataset.path, "_blank");
-});
-
-document.addEventListener("keydown", ev => {
-  if (ev.key !== "Enter" && ev.key !== " ") return;
-  const cardEl = document.activeElement.closest(".card");
-  if (!cardEl) return;
-  ev.preventDefault();
-  window.open(cardEl.dataset.path, "_blank");
-});
-
 
 /* Keyboard Shorthands */
 
@@ -211,29 +210,24 @@ function moveFocusSibling(direction) {
   const container = document.getElementById('container');
   const active = document.activeElement;
 
-  if (!active.classList.contains('folder') && !active.classList.contains('card')) {
-    const topItems = Array.from(container.children)
-      .filter(el => el.classList.contains('folder'));
+  if (!active.matches('.folder, .card')) {
+    const topItems = [...container.children].filter(el => el.matches('.folder'));
     if (!topItems.length) return;
-    const idx = direction > 0 ? 0 : topItems.length - 1;
-    topItems[idx].focus();
+    const target = direction > 0 ? 0 : topItems.length - 1;
+    topItems[target].focus();
     return;
   }
 
-  let group;
-  if (active.classList.contains('card')) {
-    group = active.parentElement;
-  } else {
-    group = active.closest('.subfolders') || container;
-  }
+  const group = active.matches('.card')
+    ? active.parentElement
+    : active.closest('.subfolders') || container;
 
-  const siblings = Array.from(group.children)
-    .filter(el => el.classList.contains('folder') || el.classList.contains('card'));
+  const siblings = [...group.children].filter(el => el.matches('.folder, .card'));
   if (!siblings.length) return;
 
   let idx = siblings.indexOf(active);
-  idx = (idx + direction + siblings.length) % siblings.length;
-  siblings[idx].focus();
+  const nuevoIdx = Math.min(Math.max(idx + direction, 0), siblings.length - 1);
+  siblings[nuevoIdx].focus();
 }
 
 function goDeeper() {
@@ -245,46 +239,32 @@ function goDeeper() {
 
   requestAnimationFrame(() => {
     const childContainer = active.querySelector('.subfolders, .grid');
-    if (!childContainer) return;
-    const next = Array.from(childContainer.children)
-      .find(el => el.classList.contains('folder') || el.classList.contains('card'));
+    const next = childContainer && [...childContainer.children].find(el => el.matches('.folder, .card'));
     if (next) next.focus();
   });
 }
 
 function goUp() {
   const active = document.activeElement;
-  if (active.classList.contains('card')) {
-    const parentFolder = active.closest('.grid')?.closest('.folder');
-    if (parentFolder) parentFolder.focus();
-    return;
-  }
-  if (active.classList.contains('folder')) {
-    const parentFolder = active.closest('.subfolders')?.closest('.folder');
-    if (parentFolder) parentFolder.focus();
+  if (active.matches('.card')) {
+    active.closest('.grid')?.closest('.folder')?.focus();
+  } else if (active.matches('.folder')) {
+    active.closest('.subfolders')?.closest('.folder')?.focus();
   }
 }
 
 document.addEventListener('keydown', e => {
-  switch (e.key) {
-    case 'ArrowDown':
-      moveFocusSibling(1);
-      e.preventDefault();
-      break;
-    case 'ArrowUp':
-      moveFocusSibling(-1);
-      e.preventDefault();
-      break;
-    case 'ArrowRight':
-      goDeeper();
-      e.preventDefault();
-      break;
-    case 'ArrowLeft':
-      goUp();
-      e.preventDefault();
-      break;
-    default:
-      break;
+  const acciones = {
+    ArrowDown: () => moveFocusSibling(1),
+    ArrowUp: () => moveFocusSibling(-1),
+    ArrowRight: goDeeper,
+    ArrowLeft: goUp,
+    q: goBack
+  };
+
+  if (acciones[e.key]) {
+    acciones[e.key]();
+    if (e.key !== 'q') e.preventDefault();
   }
 });
 
