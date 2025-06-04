@@ -28,16 +28,13 @@ function onIntersection(a, b) {
         const c = a.target;
         if (c.classList.contains("thumb")) {
             const folder = c.closest('.grid').dataset.folder;
-            thumbnailsCache[folder] ||= fetch(folder, {
-                headers: {
-                    Accept: "application/json"
-                }
-            }).then(res => res.json()).catch(() => []);
+            thumbnailsCache[folder] ||= fetch(folder, { headers: { Accept: "application/json" } })
+                .then(res => res.json()).catch(() => []);
             thumbnailsCache[folder].then(list => {
                 const item = list.find(x => x.name.startsWith(c.dataset.video));
                 if (item) {
-                    c.src = fullUrlWithCache(item.path);
-                    c.onload = () => c.classList.remove("loading");
+                    c.style.backgroundImage = `url('${fullUrlWithCache(item.path)}')`;
+                    c.classList.remove("loading");
                 }
             });
             b.unobserve(c);
@@ -110,10 +107,9 @@ async function collectAndRender(a, b, c) {
             d.tabIndex = 0;
             d.dataset.path = c.path;
             d.className = "card"
-            const e = document.createElement("img");
+            const e = document.createElement("div");
             e.className = "thumb loading";
             e.dataset.video = c.name;
-            e.alt = c.name;
             io.observe(e);
             const f = document.createElement("div");
             f.className = "info";
@@ -253,17 +249,18 @@ function goUp() {
   }
 }
 
-const actions = {
+document.addEventListener('keydown', e => {
+  const acciones = {
     ArrowDown: () => moveFocusSibling(1),
     ArrowUp: () => moveFocusSibling(-1),
     ArrowRight: goDeeper,
     ArrowLeft: goUp,
     q: goBack
-};
+  };
 
-document.addEventListener('keydown', e => {
-    if (acciones[e.key]) {
-        acciones[e.key]();
-    }
+  if (acciones[e.key]) {
+    acciones[e.key]();
+    if (e.key !== 'q') e.preventDefault();
+  }
 });
 
