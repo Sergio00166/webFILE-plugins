@@ -75,7 +75,7 @@ function onIntersection(entries, observer) {
 }
 
 /* Folder & File Rendering */
-async function collectAndRender(folderObj, unusedParam, parentEl) {
+async function collectAndRender(folderObj, parentEl) {
     const fragment = document.createDocumentFragment();
 
     const folderEl = document.createElement("div");
@@ -194,7 +194,6 @@ async function collectAndRender(folderObj, unusedParam, parentEl) {
             subdirs.forEach(async function (sub) {
                 await collectAndRender(
                     { name: sub.name, path: folderObj.path + sub.name + "/" },
-                    null,
                     subContainer
                 );
             });
@@ -217,26 +216,27 @@ async function collectAndRender(folderObj, unusedParam, parentEl) {
     parentEl.append(fragment);
 }
 
+
 async function renderAll() {
-    const container = document.getElementById("container");
+  const container = document.getElementById("container");
+  const response = await fetch(basePath, { headers: { Accept: "application/json" } });
+  const items = await response.json();
 
-    const rootItems = await fetch(basePath, { headers: { Accept: "application/json" } })
-        .then(function (res) { return res.json(); });
+  const videos = items.filter(item => item.type === "video");
+  if (videos.length) {
+    await collectAndRender({ name: ".", path: basePath }, container);
+  }
 
-    const rootVideos = rootItems.some(function (i) { return i.type === "video"; });
-    if (rootVideos) {
-        await collectAndRender({ name: ".", path: basePath }, null, container);
-    }
-    const dirs = rootItems
-        .filter(function (i) { return i.type === "directory" && i.name !== ".thumbnails"; })
-        .sort(function (a, b) { return a.name.localeCompare(b.name); });
+  const dirs = items
+    .filter(item => item.type === "directory" && item.name !== ".thumbnails")
+    .sort((a, b) => a.name.localeCompare(b.name));
 
-    dirs.forEach(async function (dir) {
-        await collectAndRender(
-            { name: dir.name, path: basePath + dir.name + "/" },
-            null, container
-        );
-    });
+  for (const dir of dirs) {
+    await collectAndRender(
+      { name: dir.name, path: `${basePath}${dir.name}/` },
+      container
+    );
+  }
 }
 renderAll();
 
