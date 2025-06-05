@@ -1,169 +1,354 @@
 /* Code by Sergio00166 */
 
-const { origin, pathname } = window.location, segs = pathname.split("/");
-segs.pop().includes(".") || segs.push("");
+const { origin, pathname } = window.location;
+const segs = pathname.split("/");
+if (!segs.pop().includes(".")) { segs.push(""); }
+
 const basePath = segs.join("/") + "/";
-document.getElementById("folder-name").textContent = "Videos @ " + decodeURIComponent(basePath) || "/";
+document.getElementById("folder-name").textContent =
+    "Videos @ " + decodeURIComponent(basePath) || "/";
 
-
-function fullUrlWithCache(a) {
-    return a + "?cache"
+function fullUrlWithCache(path) {
+    return path + "?cache";
 }
-function toggleContent(a) {
-    a.style.display = "none" === a.style.display ? "block" : "none"
+function toggleContent(el) {
+    el.style.display = el.style.display === "none" ? "block" : "none";
 }
 function goBack() {
-    const a = basePath.split("/").slice(0, -2).join("/") + "/";
-    window.location.href = a
+    const parent = basePath.split("/").slice(0, -2).join("/") + "/";
+    window.location.href = parent;
 }
 
-const thumbnailsCache = {},
-    io = new IntersectionObserver(onIntersection, {
-        rootMargin: "200px"
-    });
+/* Lazy‐Loading Observer */
 
-function onIntersection(a, b) {
-    a.forEach(a => {
-        if (!a.isIntersecting) return;
-        const c = a.target;
-        if (c.classList.contains("thumb")) {
-            const folder = c.closest('.grid').dataset.folder;
-            thumbnailsCache[folder] ||= fetch(folder, {
-                headers: {
-                    Accept: "application/json"
-                }
-            }).then(res => res.json()).catch(() => []);
-            thumbnailsCache[folder].then(list => {
-                const item = list.find(x => x.name.startsWith(c.dataset.video));
-                if (item) {
-                    c.src = fullUrlWithCache(item.path);
-                    c.onload = () => c.classList.remove("loading");
+const thumbnailsCache = {};
+const io = new IntersectionObserver(onIntersection, { rootMargin: "200px" });
+
+function onIntersection(entries, observer) {
+    entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+
+        if (el.classList.contains("thumb")) {
+            const folder = el.closest(".grid").dataset.folder;
+            if (!thumbnailsCache[folder]) {
+                thumbnailsCache[folder] = fetch(folder, { headers: { Accept: "application/json" } })
+                    .then(function (res) { return res.json(); })
+                    .catch(function () { return []; });
+            }
+            thumbnailsCache[folder].then(function (list) {
+                const match = list.find(function (x) {
+                    return x.name.startsWith(el.dataset.video);
+                });
+                if (match) {
+                    const imgLoader = new Image();
+                    imgLoader.onload = function () {
+                        el.style.backgroundImage = "url('" + fullUrlWithCache(match.path) + "')";
+                        el.classList.remove("loading");
+                    };
+                    imgLoader.src = fullUrlWithCache(match.path);
                 }
             });
-            b.unobserve(c);
-        } else if (c.classList.contains("folder__poster-bg")) {
-            c.style.backgroundImage = `url('${c.dataset.src}')`;
-            const a = c.parentNode.querySelector(".folder__poster-image");
-            a.onload = () => {
-                a.style.display = "block", c.classList.remove("loading")
-            }, a.src = a.dataset.src, b.unobserve(c)
-        } else if (c.classList.contains("folder__poster-image")) {
-            c.onload = () => {
-                c.style.display = "block";
-                const a = c.parentNode.querySelector(".folder__poster-bg");
-                a.style.backgroundImage = `url('${a.dataset.src}')`, a.classList.remove("loading")
+            observer.unobserve(el);
+
+        } else if (el.classList.contains("folder__poster-bg")) {
+            el.style.backgroundImage = "url('" + el.dataset.src + "')";
+            const img = el.parentNode.querySelector(".folder__poster-image");
+            img.onload = function () {
+                img.style.display = "block";
+                el.classList.remove("loading");
             };
-            c.src = c.dataset.src;
-            b.unobserve(c);
+            el.onload = function () {
+                el.style.display = "block";
+                const bg = el.parentNode.querySelector(".folder__poster-bg");
+                bg.style.backgroundImage = "url('" + bg.dataset.src + "')";
+                bg.classList.remove("loading");
+            };
+            el.src = el.dataset.src;
+            observer.unobserve(el);
+            img.src = el.dataset.src;
+            observer.unobserve(el);
+            el.removeAttribute("data-src");
         }
-    })
+    });
 }
 
-async function collectAndRender(a, b, c) {
-    const d = document.createDocumentFragment(),
-        e = document.createElement("div");
-    e.className = "folder is-loading";
-    const f = document.createElement("div");
-    f.className = "folder__header", f.textContent = a.name, e.append(f);
-    const g = document.createElement("div");
-    g.className = "folder__content", g.style.display = "none", e.append(g), e.addEventListener("click", a => {
-        a.target.closest(".card") || toggleContent(g), a.stopPropagation()
-    });
-    let h;
+/* Folder & File Rendering */
+async function collectAndRender(folderObj, parentEl) {
+    const fragment = document.createDocumentFragment();
+
+    const folderEl = document.createElement("div");
+    folderEl.className = "folder is-loading";
+    folderEl.tabIndex = 0;
+
+    const header = document.createElement("div");
+    header.className = "folder__header";
+    header.textContent = folderObj.name;
+    folderEl.append(header);
+
+    const contentEl = document.createElement("div");
+    contentEl.className = "folder__content";
+    contentEl.style.display = "none";
+    folderEl.append(contentEl);
+
+    let items;
     try {
-        h = await fetch(a.path, {
-            headers: {
-                Accept: "application/json"
-            }
-        }).then(a => a.json())
-    } catch {
-        return
-    }
-    const i = h.filter(a => "photo" === a.type),
-        j = h.find(a => "text" === a.type && "description.txt" === a.name);
-    if (i.length || j) {
-        const a = document.createElement("div");
-        a.className = "folder__description";
-        const b = document.createElement("div");
-        b.className = "folder__desc-inner";
-        if (i.length) {
-            const a = document.createElement("div");
-            a.className = "folder__poster-container";
-            const c = document.createElement("div");
-            c.className = "folder__poster-bg loading", c.dataset.src = fullUrlWithCache(i[0].path), a.append(c), io.observe(c);
-            const d = document.createElement("img");
-            d.className = "folder__poster-image", d.dataset.src = fullUrlWithCache(i[0].path), d.alt = "Poster", d.style.display = "none", a.append(d), io.observe(d), b.append(a)
+        items = await fetch(folderObj.path, { headers: { Accept: "application/json" } })
+            .then(function (res) { return res.json(); });
+    } catch { return; }
+
+    const photos = items.filter(function (i) { return i.type === "photo"; });
+    const descFile = items.find(function (i) {
+        return i.type === "text" && i.name === "description.txt";
+    });
+
+    if (photos.length || descFile) {
+        const descContainer = document.createElement("div");
+        descContainer.className = "folder__description";
+
+        const inner = document.createElement("div");
+        inner.className = "folder__desc-inner";
+
+        if (photos.length) {
+            const posterContainer = document.createElement("div");
+            posterContainer.className = "folder__poster-container";
+
+            const bg = document.createElement("div");
+            bg.className = "folder__poster-bg loading";
+            bg.dataset.src = fullUrlWithCache(photos[0].path);
+            posterContainer.append(bg);
+            io.observe(bg);
+
+            const img = document.createElement("img");
+            img.className = "folder__poster-image";
+            img.style.display = "none";
+            posterContainer.append(img);
+
+            inner.append(posterContainer);
         }
-        if (j) {
-            const a = document.createElement("div");
-            a.className = "desc-text", fetch(fullUrlWithCache(j.path)).then(a => a.text()).then(b => a.textContent = b), b.append(a)
+
+        if (descFile) {
+            const textDiv = document.createElement("div");
+            textDiv.className = "desc-text";
+            fetch(fullUrlWithCache(descFile.path))
+                .then(function (r) { return r.text(); })
+                .then(function (text) {
+                    textDiv.textContent = text;
+                });
+            inner.append(textDiv);
         }
-        a.append(b), e.insertBefore(a, g)
+
+        descContainer.append(inner);
+        folderEl.insertBefore(descContainer, contentEl);
     }
-    const k = h.filter(a => "video" === a.type);
-    if (k.length) {
-        const b = document.createElement("div");
-        b.className = "grid";
-        b.dataset.folder = a.path + ".thumbnails/";
-        k.forEach(c => {
-            const d = document.createElement("div");
-            d.className = "card", d.onclick = a => {
-                a.stopPropagation(), window.open(c.path, "_blank")
-            };
-            const e = document.createElement("img");
-            e.className = "thumb loading";
-            e.dataset.video = c.name;
-            e.alt = c.name;
-            io.observe(e);
-            const f = document.createElement("div");
-            f.className = "info";
-            const g = document.createElement("div");
-            g.className = "title", g.textContent = c.name.replace(/\.[^/.]+$/, ""), f.append(g), d.append(e, f), b.append(d)
+
+    const videos = items.filter(function (i) { return i.type === "video"; });
+    if (videos.length) {
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        grid.dataset.folder = folderObj.path + ".thumbnails/";
+
+        videos.forEach(function (vid) {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.tabIndex = 0;
+            card.dataset.path = vid.path;
+
+            const thumb = document.createElement("div");
+            thumb.className = "thumb loading";
+            thumb.dataset.video = vid.name;
+            io.observe(thumb);
+
+            const info = document.createElement("div");
+            info.className = "info";
+
+            const title = document.createElement("div");
+            title.className = "title";
+            title.textContent = vid.name.replace(/\.[^/.]+$/, "");
+
+            info.append(title);
+            card.append(thumb, info);
+            grid.append(card);
         });
-        g.append(b);
+        contentEl.append(grid);
     }
-    const l = h.filter(a => "directory" === a.type && ".thumbnails" !== a.name);
-    if (l.length) {
-        let b = !1;
-        const c = async () => {
-            if (!b) {
-                b = !0;
-                const c = document.createElement("div");
-                c.className = "subfolders";
-                for (const b of l) await collectAndRender({
-                    name: b.name,
-                    path: a.path + b.name + "/"
-                }, "", c);
-                g.appendChild(c)
+
+    const subdirs = items
+        .filter(function (i) { return i.type === "directory" && i.name !== ".thumbnails"; })
+        .sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+    if (subdirs.length) {
+        let loaded = false;
+
+        async function loadSubfolders() {
+            if (loaded) return;
+            loaded = true;
+
+            const subContainer = document.createElement("div");
+            subContainer.className = "subfolders";
+
+            for (const sub of subdirs) {
+                await collectAndRender(
+                    { name: sub.name, path: folderObj.path + sub.name + "/" },
+                    subContainer
+                );
             }
-        }, d = new IntersectionObserver((a, b) => {
-            a.forEach(a => {
-                a.isIntersecting && (c(), b.disconnect())
-            })
-        }, {
-            rootMargin: "200px"
-        });
-        d.observe(g)
+            contentEl.append(subContainer);
+        }
+        const subObserver = new IntersectionObserver(function (entries, obs) {
+            Promise.all(
+                entries.filter(entry => entry.isIntersecting).map(entry => {
+                    return loadSubfolders().then(() => obs.disconnect());
+                })
+            );
+        }, { rootMargin: "200px" });
+
+        subObserver.observe(contentEl);
     }
-    e.classList.remove("is-loading"), d.append(e), c.append(d)
+
+    folderEl.classList.remove("is-loading");
+    fragment.append(folderEl);
+    parentEl.append(fragment);
 }
+
 
 async function renderAll() {
-    const a = document.getElementById("container"),
-        b = await fetch(basePath, {
-            headers: {
-                Accept: "application/json"
-            }
-        }).then(a => a.json()),
-        c = b.filter(a => "video" === a.type);
-    c.length && (await collectAndRender({
-        name: ".",
-        path: basePath
-    }, "", a));
-    const e = b.filter(a => "directory" === a.type && ".thumbnails" !== a.name).sort((c, a) => c.name.localeCompare(a.name));
-    for (const b of e) await collectAndRender({
-        name: b.name,
-        path: basePath + b.name + "/"
-    }, "", a)
+  const container = document.getElementById("container");
+  const response = await fetch(basePath, { headers: { Accept: "application/json" } });
+  const items = await response.json();
+
+  const videos = items.filter(item => item.type === "video");
+  if (videos.length) {
+    await collectAndRender({ name: ".", path: basePath }, container);
+  }
+
+  const dirs = items
+    .filter(item => item.type === "directory" && item.name !== ".thumbnails")
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  for (const dir of dirs) {
+    await collectAndRender(
+      { name: dir.name, path: `${basePath}${dir.name}/` },
+      container
+    );
+  }
 }
 renderAll();
+
+
+/* Interaction Handlers */
+
+document.addEventListener("click", function (ev) {
+    const cardEl = ev.target.closest(".card");
+    if (cardEl) {
+        ev.stopPropagation();
+        window.open(cardEl.dataset.path, "_blank");
+        return;
+    }
+    const folderEl = ev.target.closest(".folder");
+    if (!folderEl) return;
+
+    const content = folderEl.querySelector(".folder__content");
+    if (content) { toggleContent(content); }
+});
+
+document.addEventListener("keydown", (ev) => {
+    const key = ev.key;
+    const active = document.activeElement;
+
+    if (key === "Enter" || key === " " || key === "Spacebar") {
+        const cardEl = active.closest(".card");
+        if (cardEl) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            window.open(cardEl.dataset.path, "_blank");
+            return;
+        }
+        const folderEl = active.closest(".folder");
+        if (folderEl) {
+            const content = folderEl.querySelector(".folder__content");
+            if (content) {
+                toggleContent(content);
+                ev.preventDefault();
+            }
+        } 
+        return;
+    }
+    switch (key) {
+        case "ArrowDown":
+            moveFocusSibling(1);
+            ev.preventDefault();
+            break;
+        case "ArrowUp":
+            moveFocusSibling(-1);
+            ev.preventDefault();
+            break;
+        case "ArrowRight":
+            goDeeper();
+            ev.preventDefault();
+            break;
+        case "ArrowLeft":
+            goUp();
+            ev.preventDefault();
+            break;
+        case "q":
+            goBack();
+            break;
+    }
+});
+
+/* Aux Keyboard Functions */
+
+function moveFocusSibling(direction) {
+    const container = document.getElementById("container");
+    const active = document.activeElement;
+
+    if (!active.matches(".folder, .card")) {
+        const topItems = Array.from(container.children).filter(function (el) {
+            return el.matches(".folder");
+        });
+        if (!topItems.length) return;
+        const idx = direction > 0 ? 0 : topItems.length - 1;
+        topItems[idx].focus();
+        return;
+    }
+    const group = active.matches(".card")
+        ? active.parentElement
+        : active.closest(".subfolders") || container;
+
+    const siblings = Array.from(group.children).filter(function (el) {
+        return el.matches(".folder, .card");
+    });
+    if (!siblings.length) return;
+
+    const idx = siblings.indexOf(active);
+    const nextIdx = Math.min(Math.max(idx + direction, 0), siblings.length - 1);
+    siblings[nextIdx].focus();
+}
+
+function goDeeper() {
+    const active = document.activeElement;
+    if (!active.classList.contains("folder")) return;
+
+    const content = active.querySelector(".folder__content");
+    if (!content || content.style.display === "none") return;
+
+    requestAnimationFrame(function () {
+        const childContainer = active.querySelector(".subfolders, .grid");
+        if (!childContainer) return;
+        const next = Array.from(childContainer.children).find(function (el) {
+            return el.matches(".folder, .card");
+        });
+        if (next) next.focus();
+    });
+}
+
+function goUp() {
+    const active = document.activeElement;
+    if (active.matches(".card")) {
+        active.closest(".grid")?.closest(".folder")?.focus();
+    } else if (active.matches(".folder")) {
+        active.closest(".subfolders")?.closest(".folder")?.focus();
+    }
+}
+ 
