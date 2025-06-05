@@ -25,6 +25,7 @@ body {
 }
 img {
     user-select: none;
+    -webkit-user-select: none;
 }
 .address-bar {
     background: var(--bar-bg);
@@ -182,8 +183,7 @@ img {
     position: absolute;
     inset: 0;
     background: var(--placeholder) center/cover no-repeat;
-    filter: blur(8px);
-    transform: scale(1.1);
+    filter: blur(3px);
 }
 .folder__poster-bg.loading {
     animation: pulse 1.5s infinite;
@@ -210,13 +210,24 @@ img {
     flex: 1;
     max-height: 150px;
     overflow-y: auto;
+    white-space: pre-wrap;
     scrollbar-width: thin;
     scrollbar-color: var(--accent) rgba(187, 134, 252, 0.1);
 }
+.desc-text::-webkit-scrollbar {
+    width: 6px;
+}
 .desc-text::-webkit-scrollbar-thumb {
     background-color: var(--accent);
-    border-radius: 8px;
+    border-radius: 3px;
 }
+.desc-text::-webkit-scrollbar-track {
+    background-color: rgba(187, 134, 252, 0.1);
+}
+
+
+/* Responsive block */
+
 @media (max-width: 600px) {
     .folder__desc-inner {
         flex-direction: column;
@@ -251,3 +262,4 @@ img {
         display: none;
     }
 }
+ 

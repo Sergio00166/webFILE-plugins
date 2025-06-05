@@ -58,10 +58,6 @@ function onIntersection(entries, observer) {
                 img.style.display = "block";
                 el.classList.remove("loading");
             };
-            img.src = img.dataset.src;
-            observer.unobserve(el);
-
-        } else if (el.classList.contains("folder__poster-image")) {
             el.onload = function () {
                 el.style.display = "block";
                 const bg = el.parentNode.querySelector(".folder__poster-bg");
@@ -70,6 +66,9 @@ function onIntersection(entries, observer) {
             };
             el.src = el.dataset.src;
             observer.unobserve(el);
+            img.src = el.dataset.src;
+            observer.unobserve(el);
+            el.removeAttribute("data-src");
         }
     });
 }
@@ -122,11 +121,8 @@ async function collectAndRender(folderObj, parentEl) {
 
             const img = document.createElement("img");
             img.className = "folder__poster-image";
-            img.dataset.src = fullUrlWithCache(photos[0].path);
-            img.alt = "Poster";
             img.style.display = "none";
             posterContainer.append(img);
-            io.observe(img);
 
             inner.append(posterContainer);
         }
@@ -184,28 +180,27 @@ async function collectAndRender(folderObj, parentEl) {
     if (subdirs.length) {
         let loaded = false;
 
-        function loadSubfolders() {
+        async function loadSubfolders() {
             if (loaded) return;
             loaded = true;
 
             const subContainer = document.createElement("div");
             subContainer.className = "subfolders";
 
-            subdirs.forEach(async function (sub) {
+            for (const sub of subdirs) {
                 await collectAndRender(
                     { name: sub.name, path: folderObj.path + sub.name + "/" },
                     subContainer
                 );
-            });
+            }
             contentEl.append(subContainer);
         }
         const subObserver = new IntersectionObserver(function (entries, obs) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    loadSubfolders();
-                    obs.disconnect();
-                }
-            });
+            Promise.all(
+                entries.filter(entry => entry.isIntersecting).map(entry => {
+                    return loadSubfolders().then(() => obs.disconnect());
+                })
+            );
         }, { rootMargin: "200px" });
 
         subObserver.observe(contentEl);
@@ -356,3 +351,4 @@ function goUp() {
         active.closest(".subfolders")?.closest(".folder")?.focus();
     }
 }
+ 
