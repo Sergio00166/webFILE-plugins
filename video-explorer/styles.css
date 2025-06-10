@@ -14,7 +14,8 @@
 }
 * { 
     box-sizing: border-box;
-    margin: 0; padding: 0; 
+    margin: 0; 
+    padding: 0; 
     -webkit-tap-highlight-color: transparent;
 }
 body {
@@ -24,8 +25,8 @@ body {
     padding: var(--gap);
 }
 img {
-    user-select: none;
     -webkit-user-select: none;
+    user-select: none;
 }
 .address-bar {
     background: var(--bar-bg);
@@ -41,12 +42,80 @@ img {
     word-break: break-all;
     overflow-wrap: break-word;
 }
+.grid {
+    display: grid;
+    gap: var(--gap);
+    grid-template-columns: repeat(4, 1fr);
+}
+.card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: var(--shadow);
+}
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+}
+.thumb {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--placeholder) center/cover no-repeat;
+    position: relative;
+    border-top-left-radius: var(--card-radius);
+    border-top-right-radius: var(--card-radius);
+}
+.thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+.thumb.loading {
+    animation: pulse 1.5s infinite;
+}
+.thumb.loading::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+    background-size: 200% 100%;
+    animation: loadingAnim 1.5s infinite;
+}
+.info {
+    padding: 0.75rem;
+    text-align: center;
+}
+.title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.back-btn {
+    background-color: var(--accent);
+    color: var(--bg);
+    padding: 0.75rem 1rem;
+    border-radius: var(--card-radius);
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    transition: background-color 0.3s;
+}
+.back-btn:hover {
+    background-color: #9c66f0;
+}
 .folder {
     background: var(--bar-bg);
     border-radius: var(--card-radius);
     margin-bottom: var(--gap);
     overflow: hidden;
-    box-shadow: var(--shadow);
     cursor: pointer;
     box-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
 }
@@ -79,83 +148,8 @@ img {
 .folder.is-open .folder__content {
     display: block;
 }
-.grid {
-    display: grid;
-    gap: var(--gap);
-    grid-template-columns: repeat(4, 1fr);
-}
-@media (max-width: 1024px) {
-    .grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 600px) {
-    .grid { grid-template-columns: 1fr; }
-}
-.card {
-    background: var(--card-bg);
-    border-radius: var(--card-radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
-}
-.thumb {
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: var(--placeholder) center/cover no-repeat;
-    position: relative;
-    border-top-left-radius: var(--card-radius);
-    border-top-right-radius: var(--card-radius);
-}
-.thumb.loading {
-    animation: pulse 1.5s infinite;
-}
-.thumb.loading::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
-    background-size: 200% 100%;
-    animation: loadingAnim 1.5s infinite;
-}
-@keyframes pulse {
-    0%,100% { background-color: #333; }
-    50%     { background-color: #444; }
-}
-@keyframes loadingAnim {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-.info {
-    padding: 0.75rem;
-    text-align: center;
-}
-.title {
-    font-weight: 700;
-    font-size: 1.05rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.back-btn {
-    background-color: var(--accent);
-    color: var(--bg);
-    padding: 0.75rem 1rem;
-    border-radius: var(--card-radius);
-    text-align: center;
-    cursor: pointer;
-    margin-bottom: 1rem;
-    transition: background-color 0.3s;
-}
-.back-btn:hover {
-    background-color: #9c66f0;
-}
-/* Description + Poster */
+
+/* Folder: Description & Poster */
 .folder__description {
     margin: 0.5rem 1rem;
     padding: 1rem;
@@ -178,12 +172,18 @@ img {
     border-radius: var(--card-radius);
     overflow: hidden;
 }
-/* background poster skeleton */
 .folder__poster-bg {
     position: absolute;
     inset: 0;
     background: var(--placeholder) center/cover no-repeat;
-    filter: blur(3px);
+}
+.folder__poster-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    filter: blur(2px);
+    display: block;
 }
 .folder__poster-bg.loading {
     animation: pulse 1.5s infinite;
@@ -196,16 +196,18 @@ img {
     background-size: 200% 100%;
     animation: loadingAnim 1.5s infinite;
 }
-/* foreground poster hidden until loaded */
 .folder__poster-image {
-    position: relative;
-    z-index: 2;
     width: 100%;
     height: 100%;
     object-fit: contain;
+    object-position: center;
     display: none;
+    position: relative;
+    z-index: 2;
 }
-/* scrollable desc text */
+.folder__poster-image.loaded {
+    display: block;
+}
 .desc-text {
     flex: 1;
     max-height: 150px;
@@ -224,11 +226,26 @@ img {
 .desc-text::-webkit-scrollbar-track {
     background-color: rgba(187, 134, 252, 0.1);
 }
+@keyframes pulse {
+    0%, 100% { background-color: #333; }
+    50% { background-color: #444; }
+}
+@keyframes loadingAnim {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
 
+/* Responsive Styles */
 
-/* Responsive block */
-
+@media (max-width: 1024px) {
+    .grid { 
+        grid-template-columns: repeat(2, 1fr); 
+    }
+}
 @media (max-width: 600px) {
+    .grid { 
+        grid-template-columns: 1fr; 
+    }
     .folder__desc-inner {
         flex-direction: column;
     }
@@ -245,8 +262,7 @@ img {
         padding: 0.5rem;
         font-size: 0.8rem;
     }
-    .folder__content,
-    .info,
+    .folder__content, .info,
     .folder__description {
         padding: 0.5rem;
         font-size: 0.75rem;
@@ -262,4 +278,4 @@ img {
         display: none;
     }
 }
- 
+

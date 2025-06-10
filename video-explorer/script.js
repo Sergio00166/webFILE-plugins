@@ -41,32 +41,53 @@ function onIntersection(entries, observer) {
                     return x.name.startsWith(el.dataset.video);
                 });
                 if (match) {
-                    const imgLoader = new Image();
-                    imgLoader.onload = function () {
-                        el.style.backgroundImage = "url('" + fullUrlWithCache(match.path) + "')";
+                    const loader = new Image();
+                    loader.onload = function () {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = loader.naturalWidth;
+                        canvas.height = loader.naturalHeight;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(loader, 0, 0);
+                        const dataURL = canvas.toDataURL();
+
+                        // Replace the placeholder content with the loaded thumbnail.
+                        el.innerHTML = "";
+                        const imgEl = document.createElement("img");
+                        imgEl.src = dataURL;
+                        el.appendChild(imgEl);
                         el.classList.remove("loading");
+                        el.removeAttribute("data-video");
                     };
-                    imgLoader.src = fullUrlWithCache(match.path);
+                    loader.src = fullUrlWithCache(match.path);
                 }
             });
             observer.unobserve(el);
 
         } else if (el.classList.contains("folder__poster-bg")) {
-            el.style.backgroundImage = "url('" + el.dataset.src + "')";
-            const img = el.parentNode.querySelector(".folder__poster-image");
-            img.onload = function () {
-                img.style.display = "block";
+            const src = el.dataset.src;
+            const posterImg = el.closest(".folder__poster-container")
+                .querySelector(".folder__poster-image");
+
+            const loader = new Image();
+            loader.onload = function () {
+                const canvas = document.createElement("canvas");
+                canvas.width = loader.naturalWidth;
+                canvas.height = loader.naturalHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(loader, 0, 0);
+                const dataURL = canvas.toDataURL();
+
+                el.innerHTML = "";
+                const bgImg = document.createElement("img");
+                bgImg.src = dataURL;
+                el.appendChild(bgImg);
+
+                posterImg.src = dataURL;
+                posterImg.classList.add("loaded");
                 el.classList.remove("loading");
             };
-            el.onload = function () {
-                el.style.display = "block";
-                const bg = el.parentNode.querySelector(".folder__poster-bg");
-                bg.style.backgroundImage = "url('" + bg.dataset.src + "')";
-                bg.classList.remove("loading");
-            };
-            el.src = el.dataset.src;
-            observer.unobserve(el);
-            img.src = el.dataset.src;
+            loader.src = src;
+
             observer.unobserve(el);
             el.removeAttribute("data-src");
         }
@@ -109,19 +130,21 @@ async function collectAndRender(folderObj, parentEl) {
         const inner = document.createElement("div");
         inner.className = "folder__desc-inner";
 
+        // Poster section: only one poster per folder.
         if (photos.length) {
             const posterContainer = document.createElement("div");
             posterContainer.className = "folder__poster-container";
 
+            // Create the poster background element.
             const bg = document.createElement("div");
             bg.className = "folder__poster-bg loading";
             bg.dataset.src = fullUrlWithCache(photos[0].path);
             posterContainer.append(bg);
             io.observe(bg);
 
+            // Create the main poster image element.
             const img = document.createElement("img");
             img.className = "folder__poster-image";
-            img.style.display = "none";
             posterContainer.append(img);
 
             inner.append(posterContainer);
@@ -179,14 +202,11 @@ async function collectAndRender(folderObj, parentEl) {
 
     if (subdirs.length) {
         let loaded = false;
-
         async function loadSubfolders() {
             if (loaded) return;
             loaded = true;
-
             const subContainer = document.createElement("div");
             subContainer.className = "subfolders";
-
             for (const sub of subdirs) {
                 await collectAndRender(
                     { name: sub.name, path: folderObj.path + sub.name + "/" },
@@ -202,7 +222,6 @@ async function collectAndRender(folderObj, parentEl) {
                 })
             );
         }, { rootMargin: "200px" });
-
         subObserver.observe(contentEl);
     }
 
@@ -210,7 +229,6 @@ async function collectAndRender(folderObj, parentEl) {
     fragment.append(folderEl);
     parentEl.append(fragment);
 }
-
 
 async function renderAll() {
   const container = document.getElementById("container");
@@ -271,25 +289,24 @@ document.addEventListener("keydown", (ev) => {
                 toggleContent(content);
                 ev.preventDefault();
             }
-        } 
-        return;
+        } return;
     }
     switch (key) {
         case "ArrowDown":
-            moveFocusSibling(1);
             ev.preventDefault();
+            moveFocusSibling(1);
             break;
         case "ArrowUp":
-            moveFocusSibling(-1);
             ev.preventDefault();
+            moveFocusSibling(-1);
             break;
         case "ArrowRight":
-            goDeeper();
             ev.preventDefault();
+            goDeeper();
             break;
         case "ArrowLeft":
-            goUp();
             ev.preventDefault();
+            goUp();
             break;
         case "q":
             goBack();
@@ -351,4 +368,4 @@ function goUp() {
         active.closest(".subfolders")?.closest(".folder")?.focus();
     }
 }
- 
+
