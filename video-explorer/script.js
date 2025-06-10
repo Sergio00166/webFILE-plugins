@@ -116,19 +116,16 @@ async function collectAndRender(folderObj, parentEl) {
         const inner = document.createElement("div");
         inner.className = "folder__desc-inner";
 
-        // Poster section: only one poster per folder.
         if (photos.length) {
             const posterContainer = document.createElement("div");
             posterContainer.className = "folder__poster-container";
 
-            // Create the poster background element.
             const bg = document.createElement("div");
             bg.className = "folder__poster-bg loading";
             bg.dataset.src = fullUrlWithCache(photos[0].path);
             posterContainer.append(bg);
             io.observe(bg);
 
-            // Create the main poster image element.
             const img = document.createElement("img");
             img.className = "folder__poster-image";
             posterContainer.append(img);
@@ -224,18 +221,14 @@ async function renderAll() {
 
   const videos = items.filter(item => item.type === "video");
   if (videos.length) {
-    await collectAndRender({ name: ".", path: basePath }, container);
+      await collectAndRender({ name: ".", path: basePath }, container);
   }
-
   const dirs = items
     .filter(item => item.type === "directory" && item.name !== ".thumbnails")
     .sort((a, b) => a.name.localeCompare(b.name));
 
   for (const dir of dirs) {
-    await collectAndRender(
-      { name: dir.name, path: `${basePath}${dir.name}/` },
-      container
-    );
+      await collectAndRender({ name: dir.name, path: `${basePath}${dir.name}/` }, container);
   }
 }
 renderAll();
