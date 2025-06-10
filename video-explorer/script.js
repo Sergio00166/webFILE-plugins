@@ -43,17 +43,10 @@ function onIntersection(entries, observer) {
                 if (match) {
                     const loader = new Image();
                     loader.onload = function () {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = loader.naturalWidth;
-                        canvas.height = loader.naturalHeight;
-                        const ctx = canvas.getContext("2d");
-                        ctx.drawImage(loader, 0, 0);
-                        const dataURL = canvas.toDataURL();
-
                         // Replace the placeholder content with the loaded thumbnail.
                         el.innerHTML = "";
                         const imgEl = document.createElement("img");
-                        imgEl.src = dataURL;
+                        imgEl.src = loader.src;
                         el.appendChild(imgEl);
                         el.classList.remove("loading");
                         el.removeAttribute("data-video");
@@ -70,19 +63,12 @@ function onIntersection(entries, observer) {
 
             const loader = new Image();
             loader.onload = function () {
-                const canvas = document.createElement("canvas");
-                canvas.width = loader.naturalWidth;
-                canvas.height = loader.naturalHeight;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(loader, 0, 0);
-                const dataURL = canvas.toDataURL();
-
                 el.innerHTML = "";
                 const bgImg = document.createElement("img");
-                bgImg.src = dataURL;
+                bgImg.src = loader.src;
                 el.appendChild(bgImg);
 
-                posterImg.src = dataURL;
+                posterImg.src = loader.src;
                 posterImg.classList.add("loaded");
                 el.classList.remove("loading");
             };
@@ -230,6 +216,7 @@ async function collectAndRender(folderObj, parentEl) {
     parentEl.append(fragment);
 }
 
+
 async function renderAll() {
   const container = document.getElementById("container");
   const response = await fetch(basePath, { headers: { Accept: "application/json" } });
@@ -368,4 +355,3 @@ function goUp() {
         active.closest(".subfolders")?.closest(".folder")?.focus();
     }
 }
-
