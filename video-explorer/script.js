@@ -1,350 +1,221 @@
 /* Code by Sergio00166 */
 
-const { origin, pathname } = window.location;
+const { pathname } = window.location;
 const segs = pathname.split("/");
-if (!segs.pop().includes(".")) { segs.push(""); }
+if (!segs.pop().includes('.')) segs.push('');
+const basePath = segs.join('/') + '/';
+document.getElementById('folder-name').textContent = 'Videos @ ' + decodeURIComponent(basePath) || '/';
 
-const basePath = segs.join("/") + "/";
-document.getElementById("folder-name").textContent =
-    "Videos @ " + decodeURIComponent(basePath) || "/";
-
-function fullUrlWithCache(path) {
-    return path + "?cache";
-}
-function toggleContent(el) {
-    el.style.display = el.style.display === "none" ? "block" : "none";
-}
-function goBack() {
-    const parent = basePath.split("/").slice(0, -2).join("/") + "/";
-    window.location.href = parent;
-}
-
-/* Lazy‐Loading Observer */
-
+const io = new IntersectionObserver(onIntersection, { rootMargin: '200px' });
 const thumbnailsCache = {};
-const io = new IntersectionObserver(onIntersection, { rootMargin: "200px" });
 
-function onIntersection(entries, observer) {
-    entries.forEach(function (entry) {
+function fullUrlWithCache(path) { return path + '?cache'; }
+function toggleContent(el) { el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+function goBack() { window.location.href = basePath.split('/').slice(0,-3).join('/') + '/'; }
+
+function onIntersection(entries, obs) {
+    entries.forEach(async entry => {
         if (!entry.isIntersecting) return;
         const el = entry.target;
+        obs.unobserve(el);
 
-        if (el.classList.contains("thumb")) {
-            const folder = el.closest(".grid").dataset.folder;
-            if (!thumbnailsCache[folder]) {
-                thumbnailsCache[folder] = fetch(folder, { headers: { Accept: "application/json" } })
-                    .then(function (res) { return res.json(); })
-                    .catch(function () { return []; });
-            }
-            thumbnailsCache[folder].then(function (list) {
-                const match = list.find(function (x) {
-                    return x.name.startsWith(el.dataset.video);
+        if (el.classList.contains('thumb')) {
+            const folder = el.closest('.grid').dataset.folder;
+            thumbnailsCache[folder] ||= fetch(folder, { headers: { Accept: 'application/json' } })
+            .then(res => res.json())
+            .catch(() => []);
+            
+            thumbnailsCache[folder].then(list => {
+                const match = list.find(x => x.name.startsWith(el.dataset.video));
+                if (!match) return;
+                
+                const img = new Image();
+                img.src = fullUrlWithCache(match.path);
+                el.textContent = '';
+                el.append(img);
+                
+                const ready = img.decode ? img.decode() : new Promise(r => img.onload = r);
+                ready.finally(() => {
+                    el.classList.remove('loading');
+                    el.removeAttribute('data-video');
                 });
-                if (match) {
-                    const loader = new Image();
-                    loader.onload = function () {
-                        // Replace the placeholder content with the loaded thumbnail.
-                        el.innerHTML = "";
-                        const imgEl = document.createElement("img");
-                        imgEl.src = loader.src;
-                        el.appendChild(imgEl);
-                        el.classList.remove("loading");
-                        el.removeAttribute("data-video");
-                    };
-                    loader.src = fullUrlWithCache(match.path);
-                }
             });
-            observer.unobserve(el);
 
-        } else if (el.classList.contains("folder__poster-bg")) {
-            const src = el.dataset.src;
-            const posterImg = el.closest(".folder__poster-container")
-                .querySelector(".folder__poster-image");
-
-            const loader = new Image();
-            loader.onload = function () {
-                el.innerHTML = "";
-                const bgImg = document.createElement("img");
-                bgImg.src = loader.src;
-                el.appendChild(bgImg);
-
-                posterImg.src = loader.src;
-                posterImg.classList.add("loaded");
-                el.classList.remove("loading");
+        } else if (el.classList.contains('folder__poster-bg')) {
+            const posterContainer = el.closest('.folder__poster-container');
+            const posterImage = posterContainer.querySelector('.folder__poster-image');
+            
+            const imageSrc = el.dataset.src;
+            const backgroundImage = new Image();
+            backgroundImage.src = posterImage.src = imageSrc;
+            
+            const loadImage = img => img.decode?.() ?? new Promise(resolve => (img.onload = resolve));
+            const revealImage = () => {
+                el.innerHTML = '';
+                el.append(backgroundImage);
+                posterImage.classList.add('loaded');
+                el.classList.remove('loading');
+                el.removeAttribute('data-src');
             };
-            loader.src = src;
-
-            observer.unobserve(el);
-            el.removeAttribute("data-src");
+            Promise.all([loadImage(backgroundImage), loadImage(posterImage)]).then(revealImage, revealImage);
         }
     });
 }
 
-/* Folder & File Rendering */
-async function collectAndRender(folderObj, parentEl) {
-    const fragment = document.createDocumentFragment();
-
-    const folderEl = document.createElement("div");
-    folderEl.className = "folder is-loading";
+function collectAndRender(folderObj, parentEl) {
+    const folderEl = document.createElement('div');
+    folderEl.className = 'folder is-loading';
     folderEl.tabIndex = 0;
 
-    const header = document.createElement("div");
-    header.className = "folder__header";
+    const header = document.createElement('div');
+    header.className = 'folder__header';
     header.textContent = folderObj.name;
-    folderEl.append(header);
 
-    const contentEl = document.createElement("div");
-    contentEl.className = "folder__content";
-    contentEl.style.display = "none";
-    folderEl.append(contentEl);
+    const contentEl = document.createElement('div');
+    contentEl.className = 'folder__content';
+    contentEl.style.display = 'none';
 
-    let items;
-    try {
-        items = await fetch(folderObj.path, { headers: { Accept: "application/json" } })
-            .then(function (res) { return res.json(); });
-    } catch { return; }
+    folderEl.append(header, contentEl);
+    parentEl.append(folderEl);
 
-    const photos = items.filter(function (i) { return i.type === "photo"; });
-    const descFile = items.find(function (i) {
-        return i.type === "text" && i.name === "description.txt";
-    });
+    (async () => {
+        let items;
+        try { items = await fetch(folderObj.path, { headers:{Accept:'application/json'} }).then(r=>r.json()); }
+        catch { folderEl.classList.remove('is-loading'); return; }
 
-    if (photos.length || descFile) {
-        const descContainer = document.createElement("div");
-        descContainer.className = "folder__description";
+        // descripción y poster
+        const photos = items.filter(i=>i.type==='photo');
+        const desc    = items.find(i=>i.type==='text' && i.name==='description.txt');
+        if (photos.length || desc) {
+            const descContainer = document.createElement('div');
+            descContainer.className = 'folder__description';
+            const inner = document.createElement('div');
+            inner.className = 'folder__desc-inner';
 
-        const inner = document.createElement("div");
-        inner.className = "folder__desc-inner";
-
-        if (photos.length) {
-            const posterContainer = document.createElement("div");
-            posterContainer.className = "folder__poster-container";
-
-            const bg = document.createElement("div");
-            bg.className = "folder__poster-bg loading";
-            bg.dataset.src = fullUrlWithCache(photos[0].path);
-            posterContainer.append(bg);
-            io.observe(bg);
-
-            const img = document.createElement("img");
-            img.className = "folder__poster-image";
-            posterContainer.append(img);
-
-            inner.append(posterContainer);
-        }
-
-        if (descFile) {
-            const textDiv = document.createElement("div");
-            textDiv.className = "desc-text";
-            fetch(fullUrlWithCache(descFile.path))
-                .then(function (r) { return r.text(); })
-                .then(function (text) {
-                    textDiv.textContent = text;
-                });
-            inner.append(textDiv);
-        }
-
-        descContainer.append(inner);
-        folderEl.insertBefore(descContainer, contentEl);
-    }
-
-    const videos = items.filter(function (i) { return i.type === "video"; });
-    if (videos.length) {
-        const grid = document.createElement("div");
-        grid.className = "grid";
-        grid.dataset.folder = folderObj.path + ".thumbnails/";
-
-        videos.forEach(function (vid) {
-            const card = document.createElement("div");
-            card.className = "card";
-            card.tabIndex = 0;
-            card.dataset.path = vid.path;
-
-            const thumb = document.createElement("div");
-            thumb.className = "thumb loading";
-            thumb.dataset.video = vid.name;
-            io.observe(thumb);
-
-            const info = document.createElement("div");
-            info.className = "info";
-
-            const title = document.createElement("div");
-            title.className = "title";
-            title.textContent = vid.name.replace(/\.[^/.]+$/, "");
-
-            info.append(title);
-            card.append(thumb, info);
-            grid.append(card);
-        });
-        contentEl.append(grid);
-    }
-
-    const subdirs = items
-        .filter(function (i) { return i.type === "directory" && i.name !== ".thumbnails"; })
-        .sort(function (a, b) { return a.name.localeCompare(b.name); });
-
-    if (subdirs.length) {
-        let loaded = false;
-        async function loadSubfolders() {
-            if (loaded) return;
-            loaded = true;
-            const subContainer = document.createElement("div");
-            subContainer.className = "subfolders";
-            for (const sub of subdirs) {
-                await collectAndRender(
-                    { name: sub.name, path: folderObj.path + sub.name + "/" },
-                    subContainer
-                );
+            if (photos.length) {
+                const pc = document.createElement('div');
+                pc.className = 'folder__poster-container';
+                const bg = document.createElement('div');
+                bg.className = 'folder__poster-bg loading';
+                bg.dataset.src = fullUrlWithCache(photos[0].path);
+                const img = document.createElement('img');
+                img.className = 'folder__poster-image';
+                pc.append(bg, img);
+                io.observe(bg);
+                inner.append(pc);
             }
-            contentEl.append(subContainer);
+            if (desc) {
+                const td = document.createElement('div');
+                td.className = 'desc-text';
+                fetch(fullUrlWithCache(desc.path))
+                    .then(r=>r.text())
+                    .then(txt=> td.textContent = txt);
+                inner.append(td);
+            }
+            descContainer.append(inner);
+            folderEl.insertBefore(descContainer, contentEl);
         }
-        const subObserver = new IntersectionObserver(function (entries, obs) {
-            Promise.all(
-                entries.filter(entry => entry.isIntersecting).map(entry => {
-                    return loadSubfolders().then(() => obs.disconnect());
-                })
-            );
-        }, { rootMargin: "200px" });
-        subObserver.observe(contentEl);
-    }
 
-    folderEl.classList.remove("is-loading");
-    fragment.append(folderEl);
-    parentEl.append(fragment);
+        const videos = items.filter(i=>i.type==='video');
+        if (videos.length) {
+            const grid = document.createElement('div');
+            grid.className = 'grid';
+            grid.dataset.folder = folderObj.path + '.thumbnails/';
+            const frag = document.createDocumentFragment();
+
+            for (const vid of videos) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.tabIndex = 0;
+                card.dataset.path = vid.path;
+
+                const thumb = document.createElement('div');
+                thumb.className = 'thumb loading';
+                thumb.dataset.video = vid.name;
+                io.observe(thumb);
+
+                const info = document.createElement('div');
+                info.className = 'info';
+                const title = document.createElement('div');
+                title.className = 'title';
+                title.textContent = vid.name.replace(/\.[^/.]+$/, '');
+                info.append(title);
+
+                card.append(thumb, info);
+                frag.append(card);
+            }
+            grid.append(frag);
+            contentEl.append(grid);
+        }
+        const subs = items
+            .filter(i=>i.type==='directory' && i.name!=='.thumbnails')
+            .sort((a,b)=>a.name.localeCompare(b.name));
+
+        if (subs.length) {
+            const subContainer = document.createElement('div');
+            subContainer.className = 'subfolders';
+            let loaded = false;
+
+            const loadSub = async () => {
+                if (loaded) return;
+                loaded = true;
+                for (const s of subs) {
+                    collectAndRender({ name: s.name, path: folderObj.path + s.name + '/' }, subContainer);
+                }
+                contentEl.append(subContainer);
+            };
+            const subObs = new IntersectionObserver((ents, o) => {
+                if (ents.some(e=>e.isIntersecting)) {
+                    loadSub().then(()=>o.disconnect());
+                }
+            }, { rootMargin: '200px' });
+            subObs.observe(contentEl);
+        }
+
+        folderEl.classList.remove('is-loading');
+    })();
 }
 
-
-async function renderAll() {
-  const container = document.getElementById("container");
-  const response = await fetch(basePath, { headers: { Accept: "application/json" } });
-  const items = await response.json();
-
-  const videos = items.filter(item => item.type === "video");
-  if (videos.length) {
-      await collectAndRender({ name: ".", path: basePath }, container);
-  }
-  const dirs = items
-    .filter(item => item.type === "directory" && item.name !== ".thumbnails")
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  for (const dir of dirs) {
-      await collectAndRender({ name: dir.name, path: `${basePath}${dir.name}/` }, container);
-  }
+function renderAll() {
+    const container = document.getElementById('container');
+    fetch(basePath, { headers:{Accept:'application/json'} })
+        .then(r => r.json())
+        .then(items => {
+            if (items.some(i=>i.type==='video')) {
+                collectAndRender({ name: '.', path: basePath }, container);
+            }
+            items
+                .filter(i=>i.type==='directory' && i.name!=='.thumbnails')
+                .sort((a,b)=>a.name.localeCompare(b.name))
+                .forEach(dir => {
+                    collectAndRender({ name: dir.name, path: basePath + dir.name + '/' }, container);
+                });
+        });
 }
 renderAll();
 
 
-/* Interaction Handlers */
-
-document.addEventListener("click", function (ev) {
-    const cardEl = ev.target.closest(".card");
-    if (cardEl) {
-        ev.stopPropagation();
-        window.open(cardEl.dataset.path, "_blank");
-        return;
-    }
-    const folderEl = ev.target.closest(".folder");
-    if (!folderEl) return;
-
-    const content = folderEl.querySelector(".folder__content");
-    if (content) { toggleContent(content); }
+document.addEventListener('click', e => {
+    const c = e.target.closest('.card');
+    if (c) { e.stopPropagation(); return window.open(c.dataset.path, '_blank'); }
+    const f = e.target.closest('.folder');
+    if (f) toggleContent(f.querySelector('.folder__content'));
 });
-
-document.addEventListener("keydown", (ev) => {
-    const key = ev.key;
-    const active = document.activeElement;
-
-    if (key === "Enter" || key === " " || key === "Spacebar") {
-        const cardEl = active.closest(".card");
-        if (cardEl) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            window.open(cardEl.dataset.path, "_blank");
-            return;
-        }
-        const folderEl = active.closest(".folder");
-        if (folderEl) {
-            const content = folderEl.querySelector(".folder__content");
-            if (content) {
-                toggleContent(content);
-                ev.preventDefault();
-            }
-        } return;
+document.addEventListener('keydown', e => {
+    const key = e.key, active = document.activeElement;
+    if (['Enter',' ','Spacebar'].includes(key)) {
+        const c = active.closest('.card');
+        if (c) { e.preventDefault(); e.stopPropagation(); return window.open(c.dataset.path,'_blank'); }
+        const f = active.closest('.folder');
+        if (f) { e.preventDefault(); toggleContent(f.querySelector('.folder__content')); }
+        return;
     }
     switch (key) {
-        case "ArrowDown":
-            ev.preventDefault();
-            moveFocusSibling(1);
-            break;
-        case "ArrowUp":
-            ev.preventDefault();
-            moveFocusSibling(-1);
-            break;
-        case "ArrowRight":
-            ev.preventDefault();
-            goDeeper();
-            break;
-        case "ArrowLeft":
-            ev.preventDefault();
-            goUp();
-            break;
-        case "q":
-            goBack();
-            break;
+        case 'ArrowDown': e.preventDefault(); moveFocusSibling(1); break;
+        case 'ArrowUp':     e.preventDefault(); moveFocusSibling(-1); break;
+        case 'ArrowRight':e.preventDefault(); goDeeper(); break;
+        case 'ArrowLeft': e.preventDefault(); goUp(); break;
+        case 'q': goBack(); break;
     }
 });
 
-/* Aux Keyboard Functions */
-
-function moveFocusSibling(direction) {
-    const container = document.getElementById("container");
-    const active = document.activeElement;
-
-    if (!active.matches(".folder, .card")) {
-        const topItems = Array.from(container.children).filter(function (el) {
-            return el.matches(".folder");
-        });
-        if (!topItems.length) return;
-        const idx = direction > 0 ? 0 : topItems.length - 1;
-        topItems[idx].focus();
-        return;
-    }
-    const group = active.matches(".card")
-        ? active.parentElement
-        : active.closest(".subfolders") || container;
-
-    const siblings = Array.from(group.children).filter(function (el) {
-        return el.matches(".folder, .card");
-    });
-    if (!siblings.length) return;
-
-    const idx = siblings.indexOf(active);
-    const nextIdx = Math.min(Math.max(idx + direction, 0), siblings.length - 1);
-    siblings[nextIdx].focus();
-}
-
-function goDeeper() {
-    const active = document.activeElement;
-    if (!active.classList.contains("folder")) return;
-
-    const content = active.querySelector(".folder__content");
-    if (!content || content.style.display === "none") return;
-
-    requestAnimationFrame(function () {
-        const childContainer = active.querySelector(".subfolders, .grid");
-        if (!childContainer) return;
-        const next = Array.from(childContainer.children).find(function (el) {
-            return el.matches(".folder, .card");
-        });
-        if (next) next.focus();
-    });
-}
-
-function goUp() {
-    const active = document.activeElement;
-    if (active.matches(".card")) {
-        active.closest(".grid")?.closest(".folder")?.focus();
-    } else if (active.matches(".folder")) {
-        active.closest(".subfolders")?.closest(".folder")?.focus();
-    }
-}
