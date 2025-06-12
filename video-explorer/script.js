@@ -11,7 +11,7 @@ const thumbnailsCache = {};
 
 function fullUrlWithCache(path) { return path + '?cache'; }
 function toggleContent(el) { el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
-function goBack() { window.location.href = basePath.split('/').slice(0,-3).join('/') + '/'; }
+function goBack() { window.location.href = basePath.split('/').slice(0,-2).join('/') + '/'; }
 
 function onIntersection(entries, obs) {
     entries.forEach(async entry => {
