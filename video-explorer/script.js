@@ -219,3 +219,59 @@ document.addEventListener('keydown', e => {
     }
 });
 
+/* Aux Keyboard Functions */
+
+function moveFocusSibling(direction) {
+    const container = document.getElementById("container");
+    const active = document.activeElement;
+
+    if (!active.matches(".folder, .card")) {
+        const topItems = Array.from(container.children).filter(function (el) {
+            return el.matches(".folder");
+        });
+        if (!topItems.length) return;
+        const idx = direction > 0 ? 0 : topItems.length - 1;
+        topItems[idx].focus();
+        return;
+    }
+    const group = active.matches(".card")
+        ? active.parentElement
+        : active.closest(".subfolders") || container;
+
+    const siblings = Array.from(group.children).filter(function (el) {
+        return el.matches(".folder, .card");
+    });
+    if (!siblings.length) return;
+
+    const idx = siblings.indexOf(active);
+    const nextIdx = Math.min(Math.max(idx + direction, 0), siblings.length - 1);
+    siblings[nextIdx].focus();
+}
+
+function goDeeper() {
+    const active = document.activeElement;
+    if (!active.classList.contains("folder")) return;
+
+    const content = active.querySelector(".folder__content");
+    if (!content || content.style.display === "none") return;
+
+    requestAnimationFrame(function () {
+        const childContainer = active.querySelector(".subfolders, .grid");
+        if (!childContainer) return;
+        const next = Array.from(childContainer.children).find(function (el) {
+            return el.matches(".folder, .card");
+        });
+        if (next) next.focus();
+    });
+}
+
+function goUp() {
+    const active = document.activeElement;
+    if (active.matches(".card")) {
+        active.closest(".grid")?.closest(".folder")?.focus();
+    } else if (active.matches(".folder")) {
+        active.closest(".subfolders")?.closest(".folder")?.focus();
+    }
+}
+
+
