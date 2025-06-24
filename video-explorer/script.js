@@ -30,7 +30,6 @@ const getText = path =>
 function onIntersection(entries, observer) {
     for (let { target, isIntersecting } of entries) {
         if (!isIntersecting) continue;
-
         observer.unobserve(target);
 
         if (target.classList.contains('thumb')) {
@@ -56,7 +55,6 @@ function onIntersection(entries, observer) {
             const container = target.closest('.folder__poster-container');
             const poster = container.querySelector('.folder__poster-image');
             const bg = new Image();
-
             bg.src = poster.src = fullUrl(target.dataset.src);
 
             Promise.all([loadImage(bg), loadImage(poster)]).then(() => {
@@ -93,9 +91,8 @@ function renderFolder(path, parentDesc, focusBack = '') {
         const descEl = (photos.length || descFile)
             ? createDescription(photos, descFile)
             : parentDesc?.cloneNode(true);
-
+          
         if (descEl) container.append(descEl);
-
         appendGrid(container, items.filter(i => i.type === 'video'), path);
 
         const subfolders = items
@@ -104,7 +101,6 @@ function renderFolder(path, parentDesc, focusBack = '') {
 
         if (subfolders.length) {
             const subCt = createDiv('subfolders');
-
             const subfolderPromises = subfolders.map(sub => {
                 const subPath = path + sub.name + '/';
                 return getJSON(subPath).then(subItems => ({ sub, subItems, subPath }));
@@ -114,7 +110,6 @@ function renderFolder(path, parentDesc, focusBack = '') {
                 results.forEach(({ sub, subItems, subPath }) => {
                     const folderEl = createDiv('folder', { tabIndex: 0 });
                     if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
-
                     renderFolderContent(subItems, folderEl, subPath);
 
                     folderEl.addEventListener('click', e => {
@@ -122,11 +117,9 @@ function renderFolder(path, parentDesc, focusBack = '') {
                         window.scrollTo(0, 0);
                         renderFolder(subPath, descEl);
                     });
-
                     subCt.append(folderEl);
                 });
             });
-
             container.append(subCt);
         }
 
@@ -216,8 +209,9 @@ function goBack() {
     const current = currentPath.split('/').filter(Boolean);
     const base = basePath.split('/').filter(Boolean);
 
-    if (current.length <= base.length) return;
-
+    if (current.length <= base.length) {
+        window.location.href = basePath.split('/').slice(0,-2).join('/') + '/';
+    }
     const parent = '/' + current.slice(0, -1).join('/') + '/';
     renderFolder(parent, null, current.at(-1));
 }
@@ -267,3 +261,5 @@ document.addEventListener('keydown', e => {
             break;
     }
 });
+
+

@@ -22,7 +22,13 @@ body {
     background: var(--bg);
     color: var(--fg);
     font-family: "Segoe UI", sans-serif;
-    padding: var(--gap);
+}
+.main {
+    width: 95%;
+    max-width: 1600px;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 50px;
 }
 img {
     -webkit-user-select: none;
@@ -293,3 +299,4 @@ img {
         display: none;
     }
 }
+
