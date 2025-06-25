@@ -168,7 +168,7 @@ img {
     margin-top: 0.25rem;
     margin-bottom: 2.5rem;
 }
-.folder .folder__description {
+.folder__description {
     margin-bottom: 0.5rem;
 }
 .folder__desc-inner {
@@ -221,8 +221,8 @@ img {
     display: block;
 }
 .desc-text {
-    flex: 1;
     max-height: 150px;
+    max-width: 100%;
     margin-left: 16px;
     overflow-y: auto;
     white-space: pre-wrap;
