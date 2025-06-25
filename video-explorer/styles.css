@@ -290,7 +290,7 @@ img {
     }
 }
 @media (max-width: 250px) {
-    .folder .desc-text {
+    .desc-text {
         display: none;
     }
 }
