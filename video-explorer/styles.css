@@ -223,6 +223,7 @@ img {
 .desc-text {
     flex: 1;
     max-height: 150px;
+    margin-left: 16px;
     overflow-y: auto;
     white-space: pre-wrap;
     scrollbar-width: thin;
@@ -265,6 +266,9 @@ img {
     }
     .folder__desc-inner {
         flex-direction: column;
+    }
+    .desc-text {
+        margin-left: 0;
     }
     .folder__poster-container {
         width: 100%;
