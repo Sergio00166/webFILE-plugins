@@ -77,8 +77,14 @@ function renderFolder(path, focusBack = '') {
     document.getElementById('folder-name').textContent =
         'Videos @ ' + decodeURIComponent(path) || '/';
 
-    getJSON(path).then(items => {
-        appendGrid(container, items.filter(i => i.type === 'video'), path);
+     getJSON(path).then(items => {
+         const photos  = items.filter(i => i.type === 'photo');
+         const descObj = items.find(i => i.type === 'text' && i.name === 'description.txt');
+
+         if (photos.length || descObj) {
+             container.append( createDescription(photos, descObj) );
+         }
+         appendGrid(container, items.filter(i => i.type === 'video'), path);
 
         const subfolders = items
             .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
