@@ -1,5 +1,3 @@
-/* Code by Sergio00166 */
-
 const { pathname } = window.location;
 const segs = pathname.split("/");
 if (!segs.pop().includes('.')) segs.push('');
@@ -17,13 +15,11 @@ const loadImage = img => img.decode?.() ?? new Promise(resolve => (img.onload = 
 const getJSON = path =>
     cache[path] ??= fetch(path, { headers: { Accept: 'application/json' } })
         .then(res => res.json()).catch(() => []);
-
 const getText = path =>
     fetch(`${path}?cache`, { headers: { Accept: 'text/plain' } })
         .then(res => res.text()).catch(() => '');
 
 const io = new IntersectionObserver(onIntersection, { rootMargin: '200px' });
-
 
 function onIntersection(entries, observer) {
     for (let { target, isIntersecting } of entries) {
@@ -68,61 +64,11 @@ function createDiv(className, props = {}) {
     return div;
 }
 
-function renderFolder(path, focusBack = '') {
-    scrollPositions[currentPath] = window.scrollY;
-    currentPath = path;
-
-    const container = document.getElementById('container');
-    container.innerHTML = '';
-    document.getElementById('folder-name').textContent =
-        'Videos @ ' + decodeURIComponent(path) || '/';
-
-     getJSON(path).then(items => {
-         if (path === basePath) {
-             const photos = items.filter(i => i.type === 'photo');
-             const descObj = items.find(i => i.type === 'text' && i.name === 'description.txt');
-             if (photos.length || descObj) {
-                  container.append(createDescription(photos, descObj));
-             }
-         }
-         appendGrid(container, items.filter(i => i.type === 'video'), path);
-
-        const subfolders = items
-            .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
-            .sort((a, b) => a.name.localeCompare(b.name));
-
-        if (subfolders.length) {
-            const subCt = createDiv('subfolders');
-            subfolders.forEach(sub => {
-                const subPath = path + sub.name + '/';
-                const folderEl = createDiv('folder', { tabIndex: 0 });
-                if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
-
-                subCt.append(folderEl);
-                getJSON(subPath).then(subItems => {
-                    renderFolderContent(subItems, folderEl, subPath);
-                });
-                folderEl.addEventListener('click', e => {
-                    e.stopPropagation();
-                    window.scrollTo(0, 0);
-                    renderFolder(subPath);
-                });
-            });
-            container.append(subCt);
-        }
-        requestAnimationFrame(() => {
-            if (focusBack) {
-                document.querySelector('[data-focus-me="1"]')?.focus();
-            } else if (scrollPositions[path] !== undefined) {
-                window.scrollTo(0, scrollPositions[path]);
-            }
-        });
-    });
-}
-
+// Ahora createDescription devuelve también la promesa de carga de texto
 function createDescription(photos, descObj) {
     const container = createDiv('folder__description');
     const inner = createDiv('folder__desc-inner');
+    const promises = [];
 
     if (photos.length) {
         const posterContainer = createDiv('folder__poster-container');
@@ -137,12 +83,15 @@ function createDescription(photos, descObj) {
 
     if (descObj) {
         const textDiv = createDiv('desc-text');
-        getText(descObj.path).then(txt => { textDiv.textContent = txt; });
+        const p = getText(descObj.path)
+            .then(txt => { textDiv.textContent = txt; })
+            .catch(() => {});
+        promises.push(p);
         inner.append(textDiv);
     }
 
     container.append(inner);
-    return container;
+    return { container, ready: Promise.all(promises) };
 }
 
 function appendGrid(parent, videos, path) {
@@ -167,6 +116,68 @@ function appendGrid(parent, videos, path) {
     parent.append(grid);
 }
 
+function renderFolder(path, focusBack = '') {
+    scrollPositions[currentPath] = window.scrollY;
+    currentPath = path;
+
+    const container = document.getElementById('container');
+    container.innerHTML = '';
+    document.getElementById('folder-name').textContent =
+        'Videos @ ' + decodeURIComponent(path) || '/';
+
+    getJSON(path).then(items => {
+        // recolectamos promesas de descripción
+        const descPromises = [];
+
+        if (path === basePath) {
+            const photos = items.filter(i => i.type === 'photo');
+            const descObj = items.find(i => i.type === 'text' && i.name === 'description.txt');
+            if (photos.length || descObj) {
+                const { container: descEl, ready } = createDescription(photos, descObj);
+                container.append(descEl);
+                descPromises.push(ready);
+            }
+        }
+
+        appendGrid(container, items.filter(i => i.type === 'video'), path);
+
+        const subfolders = items
+            .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (subfolders.length) {
+            const subCt = createDiv('subfolders');
+            subfolders.forEach(sub => {
+                const subPath = path + sub.name + '/';
+                const folderEl = createDiv('folder', { tabIndex: 0 });
+                if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
+
+                subCt.append(folderEl);
+                getJSON(subPath).then(subItems => {
+                    renderFolderContent(subItems, folderEl, subPath);
+                });
+                folderEl.addEventListener('click', e => {
+                    e.stopPropagation();
+                    window.scrollTo(0, 0);
+                    renderFolder(subPath);
+                });
+            });
+            container.append(subCt);
+        }
+
+        // cuando terminen de cargarse las descripciones, restauramos scroll y foco
+        Promise.all(descPromises).then(() => {
+            requestAnimationFrame(() => {
+                if (focusBack) {
+                document.querySelector('[data-focus-me="1"]')?.focus();
+                } else if (scrollPositions[path] !== undefined) {
+                window.scrollTo(0, scrollPositions[path]);
+                }
+            });
+        });
+    });
+}
+
 function renderFolderContent(items, container, path) {
     const photos = items.filter(i => i.type === 'photo');
     const descObj = items.find(i => i.type === 'text' && i.name === 'description.txt');
@@ -177,7 +188,8 @@ function renderFolderContent(items, container, path) {
     container.append(nameBlock);
 
     if (photos.length || descObj) {
-        container.append(createDescription(photos, descObj));
+        const { container: descEl } = createDescription(photos, descObj);
+        container.append(descEl);
     }
 }
 
