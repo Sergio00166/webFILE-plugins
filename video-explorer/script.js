@@ -1,3 +1,5 @@
+/* Code by Sergio00166 */
+
 const { pathname } = window.location;
 const segs = pathname.split("/");
 if (!segs.pop().includes('.')) segs.push('');
@@ -83,8 +85,14 @@ function createDescription(photos, descObj) {
 
     if (descObj) {
         const textDiv = createDiv('desc-text');
+        textDiv.style.visibility = 'hidden';
+        textDiv.style.opacity = '0';
         const p = getText(descObj.path)
-            .then(txt => { textDiv.textContent = txt; })
+            .then(txt => {
+                textDiv.textContent = txt;
+                textDiv.style.visibility = 'visible';
+                textDiv.style.opacity = '1';
+            })
             .catch(() => {});
         promises.push(p);
         inner.append(textDiv);
@@ -98,22 +106,31 @@ function appendGrid(parent, videos, path) {
     if (!videos.length) return;
     const grid = createDiv('grid');
     grid.dataset.folder = path + '.thumbnails/';
-    const frag = document.createDocumentFragment();
-    videos.forEach(video => {
-        const card = createDiv('card', { tabIndex: 0 });
-        card.dataset.path = video.path;
-        const thumb = createDiv('thumb loading');
-        thumb.dataset.video = video.name;
-        io.observe(thumb);
-        const info = createDiv('info');
-        const title = createDiv('title');
-        title.textContent = video.name.replace(/\.[^/.]+$/, '');
-        info.append(title);
-        card.append(thumb, info);
-        frag.append(card);
-    });
-    grid.append(frag);
     parent.append(grid);
+    const chunkSize = 8;
+    let index = 0;
+    function renderChunk() {
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < chunkSize && index < videos.length; i++, index++) {
+            const video = videos[index];
+            const card = createDiv('card', { tabIndex: 0 });
+            card.dataset.path = video.path;
+            const thumb = createDiv('thumb loading');
+            thumb.dataset.video = video.name;
+            io.observe(thumb);
+            const info = createDiv('info');
+            const title = createDiv('title');
+            title.textContent = video.name.replace(/\.[^/.]+$/, '');
+            info.append(title);
+            card.append(thumb, info);
+            frag.append(card);
+        }
+        grid.append(frag);
+        if (index < videos.length) {
+            setTimeout(renderChunk, 0); // Schedule next chunk
+        }
+    }
+    renderChunk();
 }
 
 function renderFolder(path, focusBack = '') {
@@ -147,21 +164,31 @@ function renderFolder(path, focusBack = '') {
 
         if (subfolders.length) {
             const subCt = createDiv('subfolders');
-            subfolders.forEach(sub => {
-                const subPath = path + sub.name + '/';
-                const folderEl = createDiv('folder', { tabIndex: 0 });
-                if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
+            const chunkSize = 4;
+            let index = 0;
+            function renderSubfolderChunk() {
+                for (let i = 0; i < chunkSize && index < subfolders.length; i++, index++) {
+                    const sub = subfolders[index];
+                    const subPath = path + sub.name + '/';
+                    const folderEl = createDiv('folder', { tabIndex: 0 });
+                    if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
 
-                subCt.append(folderEl);
-                getJSON(subPath).then(subItems => {
-                    renderFolderContent(subItems, folderEl, subPath);
-                });
-                folderEl.addEventListener('click', e => {
-                    e.stopPropagation();
-                    window.scrollTo(0, 0);
-                    renderFolder(subPath);
-                });
-            });
+                    subCt.append(folderEl);
+                    getJSON(subPath).then(subItems => {
+                        renderFolderContent(subItems, folderEl, subPath);
+                        folderEl.classList.add('loaded'); // Fade in and remove min-height
+                    });
+                    folderEl.addEventListener('click', e => {
+                        e.stopPropagation();
+                        window.scrollTo(0, 0);
+                        renderFolder(subPath);
+                    });
+                }
+                if (index < subfolders.length) {
+                    setTimeout(renderSubfolderChunk, 0);
+                }
+            }
+            renderSubfolderChunk();
             container.append(subCt);
         }
 
@@ -242,3 +269,4 @@ document.addEventListener('keydown', e => {
 });
 
 renderFolder(basePath);
+
