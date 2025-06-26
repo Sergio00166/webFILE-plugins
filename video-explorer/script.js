@@ -7,13 +7,12 @@ const basePath = segs.join('/') + '/';
 
 const cache = {};
 let currentPath = basePath;
-let scrollPositions = {};
 
 document.getElementById('folder-name').textContent =
     'Videos @ ' + decodeURIComponent(basePath) || '/';
 
 const fullUrl = path => `${path}?cache`;
-const loadImage = img => img.decode?.() ?? new Promise(resolve => (img.onload = resolve));
+const loadImage = img => img.decode?.() ?? new Promise(res => (img.onload = res));
 const getJSON = path =>
     cache[path] ??= fetch(path, { headers: { Accept: 'application/json' } })
         .then(res => res.json()).catch(() => []);
@@ -23,6 +22,7 @@ const getText = path =>
 
 const io = new IntersectionObserver(onIntersection, { rootMargin: '200px' });
 
+
 function onIntersection(entries, observer) {
     for (let { target, isIntersecting } of entries) {
         if (!isIntersecting) continue;
@@ -30,8 +30,7 @@ function onIntersection(entries, observer) {
 
         if (target.classList.contains('thumb')) {
             const folder = target.closest('.grid').dataset.folder;
-            cache[folder] ??= getJSON(folder);
-            cache[folder].then(list => {
+            getJSON(folder).then(list => {
                 const match = list.find(item => item.name.startsWith(target.dataset.video));
                 if (!match) return;
                 const img = new Image();
@@ -66,11 +65,9 @@ function createDiv(className, props = {}) {
     return div;
 }
 
-// Ahora createDescription devuelve también la promesa de carga de texto
 function createDescription(photos, descObj) {
     const container = createDiv('folder__description');
     const inner = createDiv('folder__desc-inner');
-    const promises = [];
 
     if (photos.length) {
         const posterContainer = createDiv('folder__poster-container');
@@ -79,27 +76,22 @@ function createDescription(photos, descObj) {
         const img = document.createElement('img');
         img.className = 'folder__poster-image';
         posterContainer.append(bg, img);
-        io.observe(bg);
+        io.observe(bg)
         inner.append(posterContainer);
     }
-
     if (descObj) {
         const textDiv = createDiv('desc-text');
         textDiv.style.visibility = 'hidden';
         textDiv.style.opacity = '0';
-        const p = getText(descObj.path)
-            .then(txt => {
-                textDiv.textContent = txt;
-                textDiv.style.visibility = 'visible';
-                textDiv.style.opacity = '1';
-            })
-            .catch(() => {});
-        promises.push(p);
+        getText(descObj.path).then(txt => {
+            textDiv.textContent = txt;
+            textDiv.style.visibility = 'visible';
+            textDiv.style.opacity = '1';
+        });
         inner.append(textDiv);
     }
-
     container.append(inner);
-    return { container, ready: Promise.all(promises) };
+    return container;
 }
 
 function appendGrid(parent, videos, path) {
@@ -109,6 +101,7 @@ function appendGrid(parent, videos, path) {
     parent.append(grid);
     const chunkSize = 8;
     let index = 0;
+
     function renderChunk() {
         const frag = document.createDocumentFragment();
         for (let i = 0; i < chunkSize && index < videos.length; i++, index++) {
@@ -117,7 +110,7 @@ function appendGrid(parent, videos, path) {
             card.dataset.path = video.path;
             const thumb = createDiv('thumb loading');
             thumb.dataset.video = video.name;
-            io.observe(thumb);
+            io.observe(thumb)
             const info = createDiv('info');
             const title = createDiv('title');
             title.textContent = video.name.replace(/\.[^/.]+$/, '');
@@ -126,15 +119,24 @@ function appendGrid(parent, videos, path) {
             frag.append(card);
         }
         grid.append(frag);
-        if (index < videos.length) {
-            setTimeout(renderChunk, 0); // Schedule next chunk
-        }
+        if (index < videos.length) setTimeout(renderChunk, 0);
     }
     renderChunk();
 }
 
+function goBack() {
+    const current = currentPath.split('/').filter(Boolean);
+    const base = basePath.split('/').filter(Boolean);
+    if (current.length <= base.length) {
+        window.location.href = basePath.split('/').slice(0, -2).join('/') + '/';
+        return;
+    }
+    const parent = '/' + current.slice(0, -1).join('/') + '/';
+    const focusName = current.at(-1);
+    renderFolder(parent, focusName);
+}
+
 function renderFolder(path, focusBack = '') {
-    scrollPositions[currentPath] = window.scrollY;
     currentPath = path;
 
     const container = document.getElementById('container');
@@ -143,19 +145,11 @@ function renderFolder(path, focusBack = '') {
         'Videos @ ' + decodeURIComponent(path) || '/';
 
     getJSON(path).then(items => {
-        // recolectamos promesas de descripción
-        const descPromises = [];
-
         if (path === basePath) {
             const photos = items.filter(i => i.type === 'photo');
             const descObj = items.find(i => i.type === 'text' && i.name === 'description.txt');
-            if (photos.length || descObj) {
-                const { container: descEl, ready } = createDescription(photos, descObj);
-                container.append(descEl);
-                descPromises.push(ready);
-            }
+            if (photos.length || descObj) container.append(createDescription(photos, descObj));
         }
-
         appendGrid(container, items.filter(i => i.type === 'video'), path);
 
         const subfolders = items
@@ -166,17 +160,18 @@ function renderFolder(path, focusBack = '') {
             const subCt = createDiv('subfolders');
             const chunkSize = 4;
             let index = 0;
+
             function renderSubfolderChunk() {
                 for (let i = 0; i < chunkSize && index < subfolders.length; i++, index++) {
                     const sub = subfolders[index];
                     const subPath = path + sub.name + '/';
                     const folderEl = createDiv('folder', { tabIndex: 0 });
                     if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
-
                     subCt.append(folderEl);
+
                     getJSON(subPath).then(subItems => {
                         renderFolderContent(subItems, folderEl, subPath);
-                        folderEl.classList.add('loaded'); // Fade in and remove min-height
+                        folderEl.classList.add('loaded');
                     });
                     folderEl.addEventListener('click', e => {
                         e.stopPropagation();
@@ -184,24 +179,12 @@ function renderFolder(path, focusBack = '') {
                         renderFolder(subPath);
                     });
                 }
-                if (index < subfolders.length) {
-                    setTimeout(renderSubfolderChunk, 0);
-                }
+                if (index < subfolders.length) renderSubfolderChunk();
             }
             renderSubfolderChunk();
             container.append(subCt);
         }
-
-        // cuando terminen de cargarse las descripciones, restauramos scroll y foco
-        Promise.all(descPromises).then(() => {
-            requestAnimationFrame(() => {
-                if (focusBack) {
-                document.querySelector('[data-focus-me="1"]')?.focus();
-                } else if (scrollPositions[path] !== undefined) {
-                window.scrollTo(0, scrollPositions[path]);
-                }
-            });
-        });
+        if (focusBack) waitForElement('[data-focus-me="1"]').then(el => el.focus());
     });
 }
 
@@ -214,21 +197,7 @@ function renderFolderContent(items, container, path) {
     nameBlock.append(title);
     container.append(nameBlock);
 
-    if (photos.length || descObj) {
-        const { container: descEl } = createDescription(photos, descObj);
-        container.append(descEl);
-    }
-}
-
-function goBack() {
-    const current = currentPath.split('/').filter(Boolean);
-    const base = basePath.split('/').filter(Boolean);
-    if (current.length <= base.length) {
-        window.location.href = basePath.split('/').slice(0, -2).join('/') + '/';
-        return;
-    }
-    const parent = '/' + current.slice(0, -1).join('/') + '/';
-    renderFolder(parent, current.at(-1));
+    if (photos.length || descObj) container.append(createDescription(photos, descObj));
 }
 
 document.addEventListener('click', e => {
@@ -255,18 +224,28 @@ document.addEventListener('keydown', e => {
         case 'ArrowDown': moveFocus(1); break;
         case 'ArrowUp': moveFocus(-1); break;
         case 'ArrowRight':
+        case 'Enter':
+        case ' ':
             e.preventDefault();
             if (active.classList.contains('folder')) active.click();
             else if (active.classList.contains('card')) window.open(active.dataset.path, '_blank');
             break;
         case 'ArrowLeft': e.preventDefault(); goBack(); break;
-        case 'Enter': case ' ':
-            e.preventDefault();
-            if (active.classList.contains('folder')) active.click();
-            else if (active.classList.contains('card')) window.open(active.dataset.path, '_blank');
-            break;
     }
 });
+
+function waitForElement(selector, maxTries = 20, interval = 25) {
+    return new Promise((resolve, reject) => {
+        let tries = 0;
+        function check() {
+            const el = document.querySelector(selector);
+            if (el) return resolve(el);
+            if (++tries >= maxTries) return reject(new Error('Element not found: ' + selector));
+            setTimeout(check, interval);
+        }
+        check();
+    });
+}
 
 renderFolder(basePath);
 
