@@ -12,17 +12,23 @@
     --bar-fg: #ffffff;
     --placeholder: #333;
 }
-* { 
+* {
     box-sizing: border-box;
-    margin: 0; 
-    padding: 0; 
+    margin: 0;
+    padding: 0;
     -webkit-tap-highlight-color: transparent;
 }
 body {
     background: var(--bg);
     color: var(--fg);
     font-family: "Segoe UI", sans-serif;
-    padding: var(--gap);
+}
+.main {
+    width: 95%;
+    max-width: 1600px;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 50px;
 }
 img {
     -webkit-user-select: none;
@@ -54,27 +60,28 @@ img {
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: box-shadow 0.2s, transform 0.2s;
     box-shadow: var(--shadow);
-}
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
 }
 .thumb {
     width: 100%;
     aspect-ratio: 16/9;
-    background: var(--placeholder) center/cover no-repeat;
+    background: #000;
     position: relative;
     border-top-left-radius: var(--card-radius);
     border-top-right-radius: var(--card-radius);
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .thumb img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
     display: block;
+    background: #000;
 }
 .thumb.loading {
     animation: pulse 1.5s infinite;
@@ -90,6 +97,11 @@ img {
 .info {
     padding: 0.75rem;
     text-align: center;
+    width: auto;
+    position: static;
+    background: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 }
 .title {
     font-weight: 700;
@@ -104,6 +116,7 @@ img {
     padding: 0.75rem 1rem;
     border-radius: var(--card-radius);
     text-align: center;
+    user-select: none;
     cursor: pointer;
     margin-bottom: 1rem;
     transition: background-color 0.3s;
@@ -117,7 +130,14 @@ img {
     margin-bottom: var(--gap);
     overflow: hidden;
     cursor: pointer;
-    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
+    box-shadow: var(--shadow);
+    min-height: 80px;
+    opacity: 0;
+    transition: opacity 0.3s, box-shadow 0.2s, transform 0.2s;
+}
+.folder.loaded {
+    opacity: 1;
+    min-height: unset;
 }
 .folder__header {
     padding: 0.75rem 1rem;
@@ -126,7 +146,7 @@ img {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: background 0.2s;
+    transition: background 0.3s;
     border-top-left-radius: var(--card-radius);
     border-top-right-radius: var(--card-radius);
 }
@@ -148,16 +168,19 @@ img {
 .folder.is-open .folder__content {
     display: block;
 }
-
-/* Folder: Description & Poster */
 .folder__description {
-    margin: 0.5rem 1rem;
+    margin: 0 8px 0.5rem 8px;
     padding: 1rem;
     font-size: 1rem;
     color: var(--fg);
     background: rgba(187, 134, 252, 0.1);
     border: 1px solid var(--accent);
     border-radius: var(--card-radius);
+    box-sizing: border-box;
+}
+#container > .folder__description:first-child {
+    margin-top: 0.25rem;
+    margin-bottom: 2.5rem;
 }
 .folder__desc-inner {
     display: flex;
@@ -209,12 +232,16 @@ img {
     display: block;
 }
 .desc-text {
-    flex: 1;
-    max-height: 150px;
-    overflow-y: auto;
+    display: box;
+    align-content: center;
+    height: 150px;
+    width: 100%;
+    margin-left: 16px;
+    overflow: auto;
     white-space: pre-wrap;
     scrollbar-width: thin;
     scrollbar-color: var(--accent) rgba(187, 134, 252, 0.1);
+    transition: opacity 0.3s;
 }
 .desc-text::-webkit-scrollbar {
     width: 6px;
@@ -234,20 +261,28 @@ img {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+.folder:hover, .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 16px #FFF6;
+}
+
 
 /* Responsive Styles */
 
 @media (max-width: 1024px) {
-    .grid { 
-        grid-template-columns: repeat(2, 1fr); 
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 @media (max-width: 600px) {
-    .grid { 
-        grid-template-columns: 1fr; 
+    .grid {
+        grid-template-columns: 1fr;
     }
     .folder__desc-inner {
         flex-direction: column;
+    }
+    .desc-text {
+        margin-left: 0;
     }
     .folder__poster-container {
         width: 100%;
@@ -269,7 +304,7 @@ img {
     }
 }
 @media (max-width: 250px) {
-    .folder__description {
+    .desc-text {
         display: none;
     }
 }
