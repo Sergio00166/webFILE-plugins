@@ -133,6 +133,7 @@ img {
     box-shadow: var(--shadow);
     min-height: 80px;
     opacity: 0;
+    transition: box-shadow 0.2s, transform 0.2s;
 }
 .folder.loaded {
     opacity: 1;
@@ -282,4 +283,3 @@ img {
         display: none;
     }
 }
-
