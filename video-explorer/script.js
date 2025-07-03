@@ -7,7 +7,6 @@ const basePath = segs.join('/') + '/';
 
 const cache = {};
 let currentPath = basePath;
-console.log(currentPath);
 
 document.getElementById('folder-name').textContent =
     'Videos @ ' + decodeURIComponent(basePath) || '/';
@@ -40,6 +39,7 @@ function onIntersection(entries, observer) {
         observer.unobserve(target);
 
         if (target.classList.contains('thumb')) {
+            target.classList.add('loading');
             const folder = target.closest('.grid').dataset.folder;
             getJSON(folder).then(function(list) {
                 const match = list.find(function(item) { return item.name.startsWith(target.dataset.video); });
@@ -54,6 +54,7 @@ function onIntersection(entries, observer) {
                 });
             });
         } else if (target.classList.contains('folder__poster-bg')) {
+            target.classList.add('loading');
             const container = target.closest('.folder__poster-container');
             const poster = container.querySelector('.folder__poster-image');
             const bg = new Image();
@@ -83,7 +84,7 @@ function createDescription(photos, descObj) {
 
     if (photos.length) {
         const posterContainer = createDiv('folder__poster-container');
-        const bg = createDiv('folder__poster-bg loading');
+        const bg = createDiv('folder__poster-bg');
         bg.dataset.src = photos[0].path;
         const img = document.createElement('img');
         img.className = 'folder__poster-image';
@@ -121,7 +122,7 @@ function appendGrid(parent, videos, path) {
             const video = videos[index];
             const card = createDiv('card', { tabIndex: 0 });
             card.dataset.path = video.path;
-            const thumb = createDiv('thumb loading');
+            const thumb = createDiv('thumb');
             thumb.dataset.video = video.name;
             io.observe(thumb);
             const info = createDiv('info');
@@ -266,3 +267,4 @@ function waitForElement(selector, maxTries, interval) {
 }
 
 renderFolder(basePath);
+
