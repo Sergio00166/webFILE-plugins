@@ -121,9 +121,6 @@ img {
     margin-bottom: 1rem;
     transition: background-color 0.3s;
 }
-.back-btn:hover {
-    background-color: #9c66f0;
-}
 .folder {
     background: var(--bar-bg);
     border-radius: var(--card-radius);
@@ -231,10 +228,6 @@ img {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
-.folder:hover, .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0 16px #FFF6;
-}
 
 
 /* Responsive Styles */
@@ -283,3 +276,15 @@ img {
         display: none;
     }
 }
+
+/* Disable hover on touch devices */
+@media (hover: hover) {
+    .back-btn:hover {
+        background-color: #9c66f0;
+    }
+    .folder:hover, .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 16px #FFF6;
+    }
+}
+
