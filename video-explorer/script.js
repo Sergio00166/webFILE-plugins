@@ -1,7 +1,7 @@
 /* Code by Sergio00166 */
 
 const { pathname } = window.location;
-const segs = pathname.split("/");
+const segs = pathname.split('/');
 if (!segs.pop().includes('.')) segs.push('');
 const basePath = segs.join('/') + '/';
 
@@ -42,7 +42,11 @@ function onIntersection(entries, observer) {
             target.classList.add('loading');
             const folder = target.closest('.grid').dataset.folder;
             getJSON(folder).then(function(list) {
-                const match = list.find(function(item) { return item.name.startsWith(target.dataset.video); });
+                const vidname = target.dataset.video.replace(/\.[^/.]+$/, '');
+                const match = list.find(function(item) {
+                  return item.name.startsWith(vidname + '.') &&
+                         item.name.slice(vidname.length + 1).indexOf('.') === -1;
+                });
                 if (!match) return;
                 const img = new Image();
                 img.src = fullUrl(match.path);

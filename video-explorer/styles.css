@@ -21,7 +21,7 @@
 body {
     background: var(--bg);
     color: var(--fg);
-    font-family: "Segoe UI", sans-serif;
+    font-family: 'Segoe UI', sans-serif;
 }
 .main {
     width: 95%;
@@ -87,7 +87,7 @@ img {
     animation: pulse 1.5s infinite;
 }
 .thumb.loading::before {
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
@@ -181,7 +181,7 @@ img {
     animation: pulse 1.5s infinite;
 }
 .folder__poster-bg.loading::before {
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
