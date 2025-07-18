@@ -1,7 +1,7 @@
 /* Code by Sergio00166 */
 
 const { pathname } = window.location;
-const segs = pathname.split("/");
+const segs = pathname.split('/');
 if (!segs.pop().includes('.')) segs.push('');
 const basePath = segs.join('/') + '/';
 
@@ -204,7 +204,7 @@ function renderFolder(path, focusBack) {
             renderSubfolderChunk();
             container.appendChild(subCt);
         }
-        if (focusBack) waitForElement('[data-focus-me="1"]').then(function(el) { el.focus(); });
+        if (focusBack) waitForElement('[data-focus-me='1']').then(function(el) { el.focus(); });
     });
 }
 
