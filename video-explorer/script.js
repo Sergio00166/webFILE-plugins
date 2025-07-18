@@ -204,7 +204,7 @@ function renderFolder(path, focusBack) {
             renderSubfolderChunk();
             container.appendChild(subCt);
         }
-        if (focusBack) waitForElement('[data-focus-me='1']').then(function(el) { el.focus(); });
+        if (focusBack) waitForElement('[data-focus-me="1"]').then(function(el) { el.focus(); });
     });
 }
 
