@@ -8,9 +8,6 @@ const basePath = segs.join('/') + '/';
 const cache = {};
 let currentPath = basePath;
 
-document.getElementById('folder-name').textContent =
-    'Videos @ ' + decodeURIComponent(basePath) || '/';
-
 const fullUrl = function(path) { return path + '?cache'; };
 const loadImage = function(img) {
     if (typeof img.decode === 'function') return img.decode();
@@ -161,8 +158,7 @@ function renderFolder(path, focusBack) {
 
     const container = document.getElementById('container');
     container.innerHTML = '';
-    document.getElementById('folder-name').textContent =
-        'Videos @ ' + decodeURIComponent(path) || '/';
+    document.getElementById('folder-name').textContent = decodeURIComponent(path);
 
     getJSON(path).then(function(items) {
         if (path === basePath) {
@@ -229,29 +225,44 @@ document.addEventListener('click', function(e) {
     }
 });
 
-document.addEventListener('keydown', function(e) {
-    const key = e.key;
-    const active = document.activeElement;
-    const items = Array.prototype.slice.call(document.querySelectorAll('.folder, .card'));
-    let index = items.indexOf(active);
-    function moveFocus(step) {
-        e.preventDefault();
-        index = index === -1
-            ? (step > 0 ? 0 : items.length - 1)
-            : (index + step + items.length) % items.length;
-        items[index].focus();
-    }
+function moveFocus(direction) {
+    var items = Array.from(document.querySelectorAll('.folder, .card'));
+    if (items.length === 0) return;
+
+    var index = items.indexOf(document.activeElement);
+    if (direction === -Infinity) index = 0;
+    else if (direction === Infinity) index = items.length - 1;
+    else index = (index + direction + items.length) % items.length;
+
+    items[index].focus();
+}
+
+document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+    const key = e.key.toLowerCase();
+
     switch (key) {
-        case 'ArrowDown': moveFocus(1); break;
-        case 'ArrowUp': moveFocus(-1); break;
-        case 'ArrowRight':
-        case 'Enter':
-        case ' ':
+        case 'arrowdown':
+        case 'arrowup':
             e.preventDefault();
+            if (key=="arrowup") moveFocus(-1);
+            else moveFocus(1);
+            break;            
+        case 'home':
+        case 'end':
+            e.preventDefault();
+            if (key=="end") moveFocus(Infinity);
+            else moveFocus(-Infinity);
+            break;
+        case ' ':
+        case 'Enter':
+        case 'arrowright':
+            e.preventDefault();
+            const active = document.activeElement;
             if (active.classList.contains('folder')) active.click();
             else if (active.classList.contains('card')) window.open(active.dataset.path, '_blank');
             break;
-        case 'ArrowLeft': e.preventDefault(); goBack(); break;
+        case 'arrowleft': e.preventDefault(); goBack(); break;
     }
 });
 
