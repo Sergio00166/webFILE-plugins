@@ -12,7 +12,6 @@
 img { pointer-events: none; }
 ::-webkit-scrollbar-thumb { background: #555; }
 ::-webkit-scrollbar-track { background: #1e1e1e; }
-.card:focus, .folder:focus { outline: 2px solid white; }
 
 body {
     margin: 0 ;
@@ -233,8 +232,14 @@ body {
 }
 
 @media (hover: hover) {
-    .folder:hover, .card:hover { box-shadow: 0 0 4px #fff; }
+    .folder:hover, .card:hover {
+        box-shadow: 0 0 4px #fff;
+    }
 }
+.card:focus-visible, .folder:focus-visible {
+    outline: 2px solid white;
+}
+
 @media (max-width: 1024px) {
     .grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -258,6 +263,9 @@ body {
     }
 }
 /* Hide everything if display too small */
-@media (max-width: 200px) { body { display: none; } }
+@media (max-width: 200px) { 
+    body { display: none; }
+}
+
 
  
