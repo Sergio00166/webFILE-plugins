@@ -51,15 +51,16 @@ body {
     padding: 8px 16px 8px 12px;
     gap: 12px;
 }
-.path-bar span {
+.path-bar button {
+    padding: 0;
+    background: none;
+    border: none;
     cursor: pointer;
     height: 21px;
-    display: flex;
-    align-items: center;
 }
-.path-bar span img {
-    height: 100%;
+.path-bar button img {
     width: auto;
+    height: 100%;
     filter: invert(75%);
 }
 .path-title {
