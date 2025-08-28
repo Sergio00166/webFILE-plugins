@@ -1,3 +1,5 @@
+/* Code by Sergio00166 */
+
 const { pathname } = window.location;
 const segs = pathname.split('/');
 if (!segs.pop().includes('.')) segs.push('');
