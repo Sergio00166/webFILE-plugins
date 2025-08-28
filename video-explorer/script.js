@@ -263,6 +263,7 @@ document.addEventListener('keydown', function (e) {
             else if (active.classList.contains('card')) window.open(active.dataset.path, '_blank');
             break;
         case 'arrowleft': e.preventDefault(); goBack(); break;
+        case 'i': window.location.reload(); break;
     }
 });
 
