@@ -1,12 +1,13 @@
 /* Code by Sergio00166 */
 
 :root {
+    --fg: #eee;
     --gap: 1rem;
     --card-radius: 16px;
     --shadow: 0 4px 12px #0008;
-    --fg: #eee;
     --accent: #bb86fc;
     --bar-bg: #1f1f1f;
+    --description-bg: #bb86fc;
     --description_height: 200px;
 }
 img { pointer-events: none; }
@@ -155,7 +156,7 @@ body {
     padding: 1rem;
     font-size: 1rem;
     color: var(--fg);
-    background: rgba(187, 134, 252, 0.1);
+    background: var(--description-bg);
     border: 1px solid var(--accent);
     border-radius: var(--card-radius);
     box-sizing: border-box;
@@ -219,7 +220,7 @@ body {
     overflow: auto;
     white-space: pre-wrap;
     scrollbar-width: thin;
-    scrollbar-color: var(--accent) rgba(187, 134, 252, 0.1);
+    scrollbar-color: var(--accent) var(--description-bg);
 }
 
 @keyframes pulse {

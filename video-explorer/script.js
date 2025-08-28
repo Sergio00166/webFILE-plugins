@@ -251,13 +251,15 @@ function moveFocus(direction) {
 }
 
 container.addEventListener('click', function (e) {
+    const d = e.target.closest('.folder, .card');
     e.stopPropagation();
-    handleItemAction(e.target.closest('.folder, .card'));
+    if (d) handleItemAction(d);
 });
 container.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
+    const d = e.target.closest('.folder, .card')
+    if (['Enter', ' ', 'ArrowRight'].includes(e.key) && d) {
         e.preventDefault();
-        handleItemAction(e.target.closest('.folder, .card'));
+        handleItemAction(d);
     }
 });
 document.addEventListener('keydown', function (e) {
