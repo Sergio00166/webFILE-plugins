@@ -1,5 +1,3 @@
-/* Code by Sergio00166 */
-
 const { pathname } = window.location;
 const segs = pathname.split('/');
 if (!segs.pop().includes('.')) segs.push('');
@@ -183,16 +181,13 @@ function renderFolder(path, focusBack) {
                     const subPath = path + sub.name + '/';
                     const folderEl = createDiv('folder', { tabIndex: 0 });
                     if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
+
+                    folderEl.dataset.path = subPath;
                     subCt.appendChild(folderEl);
 
                     getJSON(subPath).then(function(subItems) {
                         renderFolderContent(subItems, folderEl, subPath);
                         folderEl.classList.add('loaded');
-                    });
-                    folderEl.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        window.scrollTo(0, 0);
-                        renderFolder(subPath);
                     });
                 }
                 if (index < subfolders.length) renderSubfolderChunk();
@@ -217,13 +212,29 @@ function renderFolderContent(items, container, path) {
     if (photos.length || descObj) container.appendChild(createDescription(photos, descObj));
 }
 
-document.addEventListener('click', function(e) {
-    const card = e.target.closest('.card');
-    if (card) {
-        e.stopPropagation();
-        window.open(card.dataset.path, '_blank');
+function handleItemAction(el) {
+    if (el.classList.contains('folder')) {
+        window.scrollTo(0, 0);
+        renderFolder(el.dataset.path);
+    } else if (el.classList.contains('card')) {
+        window.open(el.dataset.path, '_blank');
     }
-});
+}
+
+function waitForElement(selector, maxTries, interval) {
+    maxTries = maxTries || 20;
+    interval = interval || 25;
+    return new Promise(function(resolve, reject) {
+        let tries = 0;
+        function check() {
+            const el = document.querySelector(selector);
+            if (el) return resolve(el);
+            if (++tries >= maxTries) return reject(new Error('Element not found: ' + selector));
+            setTimeout(check, interval);
+        }
+        check();
+    });
+}
 
 function moveFocus(direction) {
     var items = Array.from(document.querySelectorAll('.folder, .card'));
@@ -237,6 +248,16 @@ function moveFocus(direction) {
     items[index].focus();
 }
 
+container.addEventListener('click', function (e) {
+    e.stopPropagation();
+    handleItemAction(e.target.closest('.folder, .card'));
+});
+container.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleItemAction(e.target.closest('.folder, .card'));
+    }
+});
 document.addEventListener('keydown', function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
     const key = e.key.toLowerCase();
@@ -254,33 +275,10 @@ document.addEventListener('keydown', function (e) {
             if (key=="end") moveFocus(Infinity);
             else moveFocus(-Infinity);
             break;
-        case ' ':
-        case 'Enter':
-        case 'arrowright':
-            e.preventDefault();
-            const active = document.activeElement;
-            if (active.classList.contains('folder')) active.click();
-            else if (active.classList.contains('card')) window.open(active.dataset.path, '_blank');
-            break;
         case 'arrowleft': e.preventDefault(); goBack(); break;
         case 'i': window.location.reload(); break;
     }
 });
-
-function waitForElement(selector, maxTries, interval) {
-    maxTries = maxTries || 20;
-    interval = interval || 25;
-    return new Promise(function(resolve, reject) {
-        let tries = 0;
-        function check() {
-            const el = document.querySelector(selector);
-            if (el) return resolve(el);
-            if (++tries >= maxTries) return reject(new Error('Element not found: ' + selector));
-            setTimeout(check, interval);
-        }
-        check();
-    });
-}
 
 renderFolder(basePath);
 
