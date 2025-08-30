@@ -1,35 +1,75 @@
 /* Code by Sergio00166 */
 
+// ============================================================================
+// PATH CONFIGURATION
+// ============================================================================
+
 const { pathname } = window.location;
-const segs = pathname.split('/');
-if (!segs.pop().includes('.')) segs.push('');
-const basePath = segs.join('/') + '/';
+const pathSegments = pathname.split('/');
+if (!pathSegments.pop().includes('.')) pathSegments.push('');
+const basePath = pathSegments.join('/') + '/';
+
+// ============================================================================
+// CACHE & STATE MANAGEMENT
+// ============================================================================
 
 const cache = {};
 let currentPath = basePath;
 
-document.getElementById('folder-name').textContent =
-    'Videos @ ' + decodeURIComponent(basePath) || '/';
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
-const fullUrl = function(path) { return path + '?cache'; };
-const loadImage = function(img) {
-    if (typeof img.decode === 'function') return img.decode();
-    return new Promise(function(res) { img.onload = res; });
+const createFullURL = function(path) { 
+    return path + '?cache'; 
 };
+
+const loadImage = function(imageElement) {
+    if (typeof imageElement.decode === 'function') {
+        return imageElement.decode();
+    }
+    return new Promise(function(resolve) { 
+        imageElement.onload = resolve; 
+    });
+};
+
 const getJSON = function(path) {
-    return cache[path] = cache[path] || fetch(path, { headers: { Accept: 'application/json' } })
-        .then(function(res) { return res.json(); })
-        .catch(function() { return []; });
+    return cache[path] = cache[path] || fetch(path, { 
+        headers: { Accept: 'application/json' } 
+    })
+    .then(function(response) { 
+        return response.json(); 
+    })
+    .catch(function() { 
+        return []; 
+    });
 };
+
 const getText = function(path) {
-    return fetch(path + '?cache', { headers: { Accept: 'text/plain' } })
-        .then(function(res) { return res.text(); })
-        .catch(function() { return ''; });
+    return fetch(path + '?cache', { 
+        headers: { Accept: 'text/plain' } 
+    })
+    .then(function(response) { 
+        return response.text(); 
+    })
+    .catch(function() { 
+        return ''; 
+    });
 };
 
-const io = new IntersectionObserver(onIntersection, { rootMargin: '200px' });
+// ============================================================================
+// INTERSECTION OBSERVER SETUP
+// ============================================================================
 
-function onIntersection(entries, observer) {
+const intersectionObserver = new IntersectionObserver(handleIntersection, { 
+    rootMargin: '200px' 
+});
+
+// ============================================================================
+// INTERSECTION HANDLING
+// ============================================================================
+
+function handleIntersection(entries, observer) {
     for (let i = 0; i < entries.length; i++) {
         const entry = entries[i];
         const target = entry.target;
@@ -39,236 +79,386 @@ function onIntersection(entries, observer) {
         observer.unobserve(target);
 
         if (target.classList.contains('thumb')) {
-            target.classList.add('loading');
-            const folder = target.closest('.grid').dataset.folder;
-            getJSON(folder).then(function(list) {
-                const vidname = target.dataset.video.replace(/\.[^/.]+$/, '');
-                const match = list.find(function(item) {
-                  return item.name.startsWith(vidname + '.') &&
-                         item.name.slice(vidname.length + 1).indexOf('.') === -1;
-                });
-                if (!match) return;
-                const img = new Image();
-                img.src = fullUrl(match.path);
-                target.textContent = '';
-                target.appendChild(img);
-                loadImage(img).finally(function() {
-                    target.classList.remove('loading');
-                    target.removeAttribute('data-video');
-                });
-            });
+            handleThumbnailIntersection(target);
         } else if (target.classList.contains('folder__poster-bg')) {
-            target.classList.add('loading');
-            const container = target.closest('.folder__poster-container');
-            const poster = container.querySelector('.folder__poster-image');
-            const bg = new Image();
-            bg.src = poster.src = fullUrl(target.dataset.src);
-            Promise.all([loadImage(bg), loadImage(poster)]).then(function() {
-                target.innerHTML = '';
-                target.appendChild(bg);
-                poster.classList.add('loaded');
-                target.classList.remove('loading');
-                target.removeAttribute('data-src');
-            });
+            handlePosterIntersection(target);
         }
     }
 }
 
-function createDiv(className, props) {
-    props = props || {};
-    const div = document.createElement('div');
-    div.className = className;
-    Object.assign(div, props);
-    return div;
-}
-
-function createDescription(photos, descObj) {
-    const container = createDiv('folder__description');
-    const inner = createDiv('folder__desc-inner');
-
-    if (photos.length) {
-        const posterContainer = createDiv('folder__poster-container');
-        const bg = createDiv('folder__poster-bg');
-        bg.dataset.src = photos[0].path;
-        const img = document.createElement('img');
-        img.className = 'folder__poster-image';
-        posterContainer.appendChild(bg);
-        posterContainer.appendChild(img);
-        io.observe(bg);
-        inner.appendChild(posterContainer);
-    }
-    if (descObj) {
-        const textDiv = createDiv('desc-text');
-        textDiv.style.visibility = 'hidden';
-        textDiv.style.opacity = '0';
-        getText(descObj.path).then(function(txt) {
-            textDiv.textContent = txt;
-            textDiv.style.visibility = 'visible';
-            textDiv.style.opacity = '1';
+function handleThumbnailIntersection(thumbnailElement) {
+    thumbnailElement.classList.add('loading');
+    const gridContainer = thumbnailElement.closest('.grid');
+    const folderPath = gridContainer.dataset.folder;
+    
+    getJSON(folderPath).then(function(fileList) {
+        const videoName = thumbnailElement.dataset.video.replace(/\.[^/.]+$/, '');
+        const matchingFile = fileList.find(function(item) {
+            return item.name.startsWith(videoName + '.') &&
+                   item.name.slice(videoName.length + 1).indexOf('.') === -1;
         });
-        inner.appendChild(textDiv);
-    }
-    container.appendChild(inner);
-    return container;
-}
-
-function appendGrid(parent, videos, path) {
-    if (!videos.length) return;
-    const grid = createDiv('grid');
-    grid.dataset.folder = path + '.thumbnails/';
-    parent.appendChild(grid);
-    const chunkSize = 8;
-    let index = 0;
-
-    function renderChunk() {
-        const frag = document.createDocumentFragment();
-        for (let i = 0; i < chunkSize && index < videos.length; i++, index++) {
-            const video = videos[index];
-            const card = createDiv('card', { tabIndex: 0 });
-            card.dataset.path = video.path;
-            const thumb = createDiv('thumb');
-            thumb.dataset.video = video.name;
-            io.observe(thumb);
-            const info = createDiv('info');
-            const title = createDiv('title');
-            title.textContent = video.name.replace(/\.[^/.]+$/, '');
-            info.appendChild(title);
-            card.appendChild(thumb);
-            card.appendChild(info);
-            frag.appendChild(card);
-        }
-        grid.appendChild(frag);
-        if (index < videos.length) setTimeout(renderChunk, 0);
-    }
-    renderChunk();
-}
-
-function goBack() {
-    const current = currentPath.split('/').filter(Boolean);
-    const base = basePath.split('/').filter(Boolean);
-    if (current.length <= base.length) {
-        window.location.href = basePath.split('/').slice(0, -2).join('/') + '/';
-        return;
-    }
-    const parent = '/' + current.slice(0, -1).join('/') + '/';
-    const focusName = current[current.length - 1];
-    renderFolder(parent, focusName);
-}
-
-function renderFolder(path, focusBack) {
-    if (typeof focusBack === 'undefined') focusBack = '';
-    currentPath = path;
-
-    const container = document.getElementById('container');
-    container.innerHTML = '';
-    document.getElementById('folder-name').textContent =
-        'Videos @ ' + decodeURIComponent(path) || '/';
-
-    getJSON(path).then(function(items) {
-        if (path === basePath) {
-            const photos = items.filter(function(i) { return i.type === 'photo'; });
-            const descObj = items.find(function(i) { return i.type === 'text' && i.name === 'description.txt'; });
-            if (photos.length || descObj) container.appendChild(createDescription(photos, descObj));
-        }
-        appendGrid(container, items.filter(function(i) { return i.type === 'video'; }), path);
-
-        const subfolders = items
-            .filter(function(i) { return i.type === 'directory' && i.name !== '.thumbnails'; })
-            .sort(function(a, b) { return a.name.localeCompare(b.name); });
-
-        if (subfolders.length) {
-            const subCt = createDiv('subfolders');
-            const chunkSize = 4;
-            let index = 0;
-
-            function renderSubfolderChunk() {
-                for (let i = 0; i < chunkSize && index < subfolders.length; i++, index++) {
-                    const sub = subfolders[index];
-                    const subPath = path + sub.name + '/';
-                    const folderEl = createDiv('folder', { tabIndex: 0 });
-                    if (sub.name === focusBack) folderEl.dataset.focusMe = '1';
-                    subCt.appendChild(folderEl);
-
-                    getJSON(subPath).then(function(subItems) {
-                        renderFolderContent(subItems, folderEl, subPath);
-                        folderEl.classList.add('loaded');
-                    });
-                    folderEl.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        window.scrollTo(0, 0);
-                        renderFolder(subPath);
-                    });
-                }
-                if (index < subfolders.length) renderSubfolderChunk();
-            }
-            renderSubfolderChunk();
-            container.appendChild(subCt);
-        }
-        if (focusBack) waitForElement('[data-focus-me="1"]').then(function(el) { el.focus(); });
+        
+        if (!matchingFile) return;
+        
+        const thumbnailImage = new Image();
+        thumbnailImage.src = createFullURL(matchingFile.path);
+        thumbnailElement.textContent = '';
+        thumbnailElement.appendChild(thumbnailImage);
+        
+        loadImage(thumbnailImage).finally(function() {
+            thumbnailElement.classList.remove('loading');
+            thumbnailElement.removeAttribute('data-video');
+        });
     });
 }
 
-function renderFolderContent(items, container, path) {
-    const photos = items.filter(function(i) { return i.type === 'photo'; });
-    const descObj = items.find(function(i) { return i.type === 'text' && i.name === 'description.txt'; });
-    const nameBlock = createDiv('info');
-    const title = createDiv('title');
-    const parts = path.split('/').filter(Boolean);
-    title.textContent = parts.length ? parts[parts.length - 1] : path;
-    nameBlock.appendChild(title);
-    container.appendChild(nameBlock);
-
-    if (photos.length || descObj) container.appendChild(createDescription(photos, descObj));
+function handlePosterIntersection(posterBackgroundElement) {
+    posterBackgroundElement.classList.add('loading');
+    const posterContainer = posterBackgroundElement.closest('.folder__poster-container');
+    const posterImage = posterContainer.querySelector('.folder__poster-image');
+    const backgroundImage = new Image();
+    
+    backgroundImage.src = posterImage.src = createFullURL(posterBackgroundElement.dataset.src);
+    
+    Promise.all([loadImage(backgroundImage), loadImage(posterImage)]).then(function() {
+        posterBackgroundElement.innerHTML = '';
+        posterBackgroundElement.appendChild(backgroundImage);
+        posterImage.classList.add('loaded');
+        posterBackgroundElement.classList.remove('loading');
+        posterBackgroundElement.removeAttribute('data-src');
+    });
 }
 
-document.addEventListener('click', function(e) {
-    const card = e.target.closest('.card');
-    if (card) {
-        e.stopPropagation();
-        window.open(card.dataset.path, '_blank');
-    }
-});
+// ============================================================================
+// DOM ELEMENT CREATION
+// ============================================================================
 
-document.addEventListener('keydown', function(e) {
-    const key = e.key;
-    const active = document.activeElement;
-    const items = Array.prototype.slice.call(document.querySelectorAll('.folder, .card'));
-    let index = items.indexOf(active);
-    function moveFocus(step) {
-        e.preventDefault();
-        index = index === -1
-            ? (step > 0 ? 0 : items.length - 1)
-            : (index + step + items.length) % items.length;
-        items[index].focus();
+function createDiv(className, properties) {
+    properties = properties || {};
+    const divElement = document.createElement('div');
+    divElement.className = className;
+    Object.assign(divElement, properties);
+    return divElement;
+}
+
+// ============================================================================
+// DESCRIPTION CREATION
+// ============================================================================
+
+function createDescription(photos, descriptionObject) {
+    const descriptionContainer = createDiv('folder__description');
+    const innerContainer = createDiv('folder__desc-inner');
+
+    if (photos.length) {
+        const posterContainer = createDiv('folder__poster-container');
+        const posterBackground = createDiv('folder__poster-bg');
+        posterBackground.dataset.src = photos[0].path;
+        
+        const posterImage = document.createElement('img');
+        posterImage.className = 'folder__poster-image';
+        
+        posterContainer.appendChild(posterBackground);
+        posterContainer.appendChild(posterImage);
+        intersectionObserver.observe(posterBackground);
+        innerContainer.appendChild(posterContainer);
     }
-    switch (key) {
-        case 'ArrowDown': moveFocus(1); break;
-        case 'ArrowUp': moveFocus(-1); break;
-        case 'ArrowRight':
-        case 'Enter':
-        case ' ':
-            e.preventDefault();
-            if (active.classList.contains('folder')) active.click();
-            else if (active.classList.contains('card')) window.open(active.dataset.path, '_blank');
-            break;
-        case 'ArrowLeft': e.preventDefault(); goBack(); break;
+    
+    if (descriptionObject) {
+        const textDiv = createDiv('desc-text');
+        textDiv.style.visibility = 'hidden';
+        textDiv.style.opacity = '0';
+        
+        getText(descriptionObject.path).then(function(text) {
+            textDiv.textContent = text;
+            textDiv.style.visibility = 'visible';
+            textDiv.style.opacity = '1';
+        });
+        
+        innerContainer.appendChild(textDiv);
     }
-});
+    
+    descriptionContainer.appendChild(innerContainer);
+    return descriptionContainer;
+}
+
+// ============================================================================
+// GRID RENDERING
+// ============================================================================
+
+function appendGrid(parentContainer, videos, folderPath) {
+    if (!videos.length) return;
+    
+    const gridElement = createDiv('grid');
+    gridElement.dataset.folder = folderPath + '.thumbnails/';
+    parentContainer.appendChild(gridElement);
+    
+    const chunkSize = 8;
+    let currentIndex = 0;
+
+    function renderChunk() {
+        const documentFragment = document.createDocumentFragment();
+        
+        for (let i = 0; i < chunkSize && currentIndex < videos.length; i++, currentIndex++) {
+            const video = videos[currentIndex];
+            const videoCard = createDiv('card', { tabIndex: 0 });
+            videoCard.dataset.path = video.path;
+            
+            const thumbnail = createDiv('thumb');
+            thumbnail.dataset.video = video.name;
+            intersectionObserver.observe(thumbnail);
+            
+            const infoContainer = createDiv('info');
+            const titleElement = createDiv('title');
+            titleElement.textContent = video.name.replace(/\.[^/.]+$/, '');
+            
+            infoContainer.appendChild(titleElement);
+            videoCard.appendChild(thumbnail);
+            videoCard.appendChild(infoContainer);
+            documentFragment.appendChild(videoCard);
+        }
+        
+        gridElement.appendChild(documentFragment);
+        
+        if (currentIndex < videos.length) {
+            setTimeout(renderChunk, 0);
+        }
+    }
+    
+    renderChunk();
+}
+
+// ============================================================================
+// NAVIGATION
+// ============================================================================
+
+function goBack() {
+    const currentPathParts = currentPath.split('/').filter(Boolean);
+    const basePathParts = basePath.split('/').filter(Boolean);
+    
+    if (currentPathParts.length <= basePathParts.length) {
+        window.location.href = basePath.split('/').slice(0, -2).join('/') + '/';
+        return;
+    }
+    
+    const parentPath = '/' + currentPathParts.slice(0, -1).join('/') + '/';
+    const focusBackName = currentPathParts[currentPathParts.length - 1];
+    renderFolder(parentPath, focusBackName);
+}
+
+// ============================================================================
+// FOLDER RENDERING
+// ============================================================================
+
+function renderFolder(folderPath, focusBackName) {
+    if (typeof focusBackName === 'undefined') focusBackName = '';
+    currentPath = folderPath;
+
+    const containerElement = document.getElementById('container');
+    containerElement.innerHTML = '';
+    document.getElementById('folder-name').textContent = decodeURIComponent(folderPath);
+
+    getJSON(folderPath).then(function(folderItems) {
+        if (folderPath === basePath) {
+            const photos = folderItems.filter(function(item) { 
+                return item.type === 'photo'; 
+            });
+            const descriptionObject = folderItems.find(function(item) { 
+                return item.type === 'text' && item.name === 'description.txt'; 
+            });
+            
+            if (photos.length || descriptionObject) {
+                containerElement.appendChild(createDescription(photos, descriptionObject));
+            }
+        }
+        
+        appendGrid(containerElement, folderItems.filter(function(item) { 
+            return item.type === 'video'; 
+        }), folderPath);
+
+        const subfolders = folderItems
+            .filter(function(item) { 
+                return item.type === 'directory' && item.name !== '.thumbnails'; 
+            })
+            .sort(function(a, b) { 
+                return a.name.localeCompare(b.name); 
+            });
+
+        if (subfolders.length) {
+            const subfoldersContainer = createDiv('subfolders');
+            const chunkSize = 4;
+            let currentIndex = 0;
+
+            function renderSubfolderChunk() {
+                for (let i = 0; i < chunkSize && currentIndex < subfolders.length; i++, currentIndex++) {
+                    const subfolder = subfolders[currentIndex];
+                    const subfolderPath = folderPath + subfolder.name + '/';
+                    const folderElement = createDiv('folder', { tabIndex: 0 });
+                    
+                    if (subfolder.name === focusBackName) {
+                        folderElement.dataset.focusMe = '1';
+                    }
+
+                    folderElement.dataset.path = subfolderPath;
+                    subfoldersContainer.appendChild(folderElement);
+
+                    getJSON(subfolderPath).then(function(subfolderItems) {
+                        renderFolderContent(subfolderItems, folderElement, subfolderPath);
+                        folderElement.classList.add('loaded');
+                    });
+                }
+                
+                if (currentIndex < subfolders.length) {
+                    renderSubfolderChunk();
+                }
+            }
+            
+            renderSubfolderChunk();
+            containerElement.appendChild(subfoldersContainer);
+        }
+        
+        if (focusBackName) {
+            waitForElement('[data-focus-me="1"]').then(function(element) { 
+                element.focus(); 
+            });
+        }
+    });
+}
+
+function renderFolderContent(folderItems, containerElement, folderPath) {
+    const photos = folderItems.filter(function(item) { 
+        return item.type === 'photo'; 
+    });
+    const descriptionObject = folderItems.find(function(item) { 
+        return item.type === 'text' && item.name === 'description.txt'; 
+    });
+    
+    const nameBlock = createDiv('info');
+    const titleElement = createDiv('title');
+    const pathParts = folderPath.split('/').filter(Boolean);
+    titleElement.textContent = pathParts.length ? pathParts[pathParts.length - 1] : folderPath;
+    
+    nameBlock.appendChild(titleElement);
+    containerElement.appendChild(nameBlock);
+
+    if (photos.length || descriptionObject) {
+        containerElement.appendChild(createDescription(photos, descriptionObject));
+    }
+}
+
+// ============================================================================
+// ITEM ACTION HANDLING
+// ============================================================================
+
+function handleItemAction(element) {
+    if (element.classList.contains('folder')) {
+        window.scrollTo(0, 0);
+        renderFolder(element.dataset.path);
+    } else if (element.classList.contains('card')) {
+        window.open(element.dataset.path, '_blank');
+    }
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
 function waitForElement(selector, maxTries, interval) {
     maxTries = maxTries || 20;
     interval = interval || 25;
+    
     return new Promise(function(resolve, reject) {
         let tries = 0;
+        
         function check() {
-            const el = document.querySelector(selector);
-            if (el) return resolve(el);
+            const element = document.querySelector(selector);
+            if (element) return resolve(element);
             if (++tries >= maxTries) return reject(new Error('Element not found: ' + selector));
             setTimeout(check, interval);
         }
+        
         check();
     });
 }
 
-renderFolder(basePath);
+function moveFocus(direction) {
+    const focusableItems = Array.from(document.querySelectorAll('.folder, .card'));
+    if (focusableItems.length === 0) return;
 
+    let currentIndex = focusableItems.indexOf(document.activeElement);
+    
+    if (direction === -Infinity) {
+        currentIndex = 0;
+    } else if (direction === Infinity) {
+        currentIndex = focusableItems.length - 1;
+    } else {
+        currentIndex = (currentIndex + direction + focusableItems.length) % focusableItems.length;
+    }
+
+    focusableItems[currentIndex].focus();
+}
+
+// ============================================================================
+// EVENT LISTENERS - CONTAINER
+// ============================================================================
+
+container.addEventListener('click', function (event) {
+    const clickedItem = event.target.closest('.folder, .card');
+    event.stopPropagation();
+    
+    if (clickedItem) {
+        handleItemAction(clickedItem);
+    }
+});
+
+container.addEventListener('keydown', function (event) {
+    const focusedItem = event.target.closest('.folder, .card');
+    
+    if (['Enter', ' ', 'ArrowRight'].includes(event.key) && focusedItem) {
+        event.preventDefault();
+        handleItemAction(focusedItem);
+    }
+});
+
+// ============================================================================
+// EVENT LISTENERS - KEYBOARD SHORTCUTS
+// ============================================================================
+
+document.addEventListener('keydown', function (event) {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    
+    const key = event.key.toLowerCase();
+
+    switch (key) {
+        case 'arrowdown':
+        case 'arrowup':
+            event.preventDefault();
+            if (key === "arrowup") {
+                moveFocus(-1);
+            } else {
+                moveFocus(1);
+            }
+            break;            
+        case 'home':
+        case 'end':
+            event.preventDefault();
+            if (key === "end") {
+                moveFocus(Infinity);
+            } else {
+                moveFocus(-Infinity);
+            }
+            break;
+        case 'arrowleft': 
+            event.preventDefault(); 
+            goBack(); 
+            break;
+        case 'i': 
+            window.location.reload(); 
+            break;
+    }
+});
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+renderFolder(basePath);

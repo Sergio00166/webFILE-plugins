@@ -2,23 +2,24 @@
 
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <link rel="icon" type="image/x-icon" href="/?static=ico/video.ico">
-  <title>Video Navigator</title>
- 
-  <link rel="stylesheet" href="./styles.css?cache">
-  <script defer src="./script.js?cache"></script>
-</head>
-
-<body>
-  <div class="main">
-    <div class="address-bar" id="folder-name"></div>
-    <div class="back-btn" onclick="goBack()">Exit this menu</div>
-    <br><div id="container"></div>
-  </div>
-</body>
-
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <link rel="icon" type="image/x-icon" href="/?static=ico/video.ico">
+        <title>Video Navigator</title>
+        <link rel="stylesheet" href="./styles.css?cache">
+        <script defer="defer" src="./script.js?cache"></script>
+    </head>
+    <body>
+        <div class="path-bar">
+            <button onclick="goBack()" title="Parent">
+                <img src="/?static=svg/index/arrow-left-solid.svg">
+            </button>
+            <button onclick="window.location.reload()" title="Index (i)">
+                <img src="/?static=svg/index/house-chimney-solid.svg">
+            </button>
+            <div class="path-title" id="folder-name"></div>
+        </div>
+        <div id="container"></div>
+    </body>
 </html>
-
