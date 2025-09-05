@@ -111,7 +111,7 @@ img { pointer-events: none; }
     flex-direction: column;
     background: #1e1e1e;
     border-radius: var(--card-radius);
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition: box-shadow 0.1s;
     box-shadow: var(--shadow);
 }
 
@@ -183,7 +183,7 @@ img { pointer-events: none; }
     box-shadow: var(--shadow);
     background: var(--bar-bg);
     border-radius: var(--card-radius);
-    transition: box-shadow 0.2s, transform 0.2s, opacity 0.2s;
+    transition: box-shadow 0.1s, opacity 0.2s;
 }
 .folder.loaded {
     opacity: 1;
