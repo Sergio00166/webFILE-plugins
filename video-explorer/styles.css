@@ -1,27 +1,7 @@
 /* Code by Sergio00166 */
 
-body {
-    margin: 0 ;
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    color: var(--fg);
-    background: #121212;
-    font-family: "Segoe UI", sans-serif;
-    scrollbar-color: #555 #1e1e1e;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-/* -------------------------
-   Base
-   ------------------------- */
 
 :root {
-    --fg: #eee;
     --gap: 1rem;
     --card-radius: 16px;
     --shadow: 0 4px 12px #0008;
@@ -31,6 +11,25 @@ body {
     --description_height: 200px;
 }
 
+/* -------------------------
+   Base
+   ------------------------- */
+
+body {
+    margin: 0 ;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    color: #eee;
+    flex-direction: column;
+    background: #121212;
+    font-family: "Segoe UI", sans-serif;
+    scrollbar-color: #555 #1e1e1e;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
 img { pointer-events: none; }
 ::-webkit-scrollbar-thumb { background: #555; }
 ::-webkit-scrollbar-track { background: #1e1e1e; }
@@ -83,14 +82,13 @@ img { pointer-events: none; }
 .path-title {
     flex: 1;
     margin: 0;
-    color: var(--fg);
     font-weight: 600;
     font-family: monospace;
-    white-space: pre-wrap;
     font-size: 14px;
     background: #444;
     border-radius: 9px;
     padding: 4px 8px 4px 8px;
+    white-space: pre-wrap;
     -webkit-user-select: text;
     user-select: text;
 }
@@ -142,11 +140,11 @@ img { pointer-events: none; }
     background: #000;
 }
 .thumb.loading,
-.folder__poster-bg.loading {
+.poster-bg.loading {
     animation: pulse 1.5s infinite;
 }
 .thumb.loading::before,
-.folder__poster-bg.loading::before {
+.poster-bg.loading::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -196,7 +194,7 @@ img { pointer-events: none; }
    Poster container & image
    ------------------------- */
 
-.folder__poster-container {
+.poster-container {
     aspect-ratio: 1/1;
     position: relative;
     height: var(--description_height);
@@ -204,11 +202,11 @@ img { pointer-events: none; }
     border-radius: var(--card-radius);
     overflow: hidden;
 }
-.folder__poster-bg {
+.poster-bg {
     position: absolute;
     inset: 0;
 }
-.folder__poster-bg img {
+.poster-bg img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -216,10 +214,10 @@ img { pointer-events: none; }
     filter: blur(2px);
     display: block;
 }
-.folder__poster-bg.loading {
+.poster-bg.loading {
     animation: pulse 1.5s infinite;
 }
-.folder__poster-bg.loading::before {
+.poster-bg.loading::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -227,7 +225,7 @@ img { pointer-events: none; }
     background-size: 200% 100%;
     animation: loadingAnim 1.5s infinite;
 }
-.folder__poster-image {
+.poster-image {
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -236,7 +234,7 @@ img { pointer-events: none; }
     position: relative;
     z-index: 2;
 }
-.folder__poster-image.loaded {
+.poster-image.loaded {
     display: block;
 }
 
@@ -244,16 +242,15 @@ img { pointer-events: none; }
    Folder description
    ------------------------- */
 
-.folder__description {
+.description {
     padding: 1rem;
     font-size: 1rem;
-    color: var(--fg);
     background: var(--description-bg);
     border: 1px solid var(--accent);
     border-radius: var(--card-radius);
     box-sizing: border-box;
 }
-.folder__desc-inner {
+.desc-inner {
     display: flex;
     gap: var(--gap);
     align-items: center;
@@ -291,9 +288,9 @@ img { pointer-events: none; }
    ------------------------- */
 
 @media (max-width: 720px) {
-    .folder__desc-inner { flex-direction: column; }
+    .desc-inner { flex-direction: column; }
     .desc-text { margin-left: 0; }
-    .folder__poster-container {
+    .poster-container {
         width: 100%;
         max-width: 100%;
         height: auto;
@@ -304,7 +301,7 @@ img { pointer-events: none; }
 @media (max-width: 400px) {
     .grid { grid-template-columns: 1fr }
     body { font-size: 0.8rem; }
-    .info, .folder__description {
+    .info, .description {
         padding: 0.5rem;
         font-size: 0.75rem;
     }
