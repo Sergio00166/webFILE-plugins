@@ -20,11 +20,11 @@ let currentPath = basePath;
 // UTILITY FUNCTIONS
 // ============================================================================
 
-const createFullURL = function(path) { 
+function createFullURL(path) { 
     return path + '?cache'; 
 };
 
-const loadImage = function(imageElement) {
+function loadImage(imageElement) {
     if (typeof imageElement.decode === 'function') {
         return imageElement.decode();
     }
@@ -33,7 +33,7 @@ const loadImage = function(imageElement) {
     });
 };
 
-const getJSON = function(path) {
+function getJSON(path) {
     return cache[path] = cache[path] || fetch(path, { 
         headers: { Accept: 'application/json' } 
     })
@@ -45,7 +45,7 @@ const getJSON = function(path) {
     });
 };
 
-const getText = function(path) {
+function getText(path) {
     return fetch(path + '?cache', { 
         headers: { Accept: 'text/plain' } 
     })
@@ -80,7 +80,7 @@ function handleIntersection(entries, observer) {
 
         if (target.classList.contains('thumb')) {
             handleThumbnailIntersection(target);
-        } else if (target.classList.contains('folder__poster-bg')) {
+        } else if (target.classList.contains('poster-bg')) {
             handlePosterIntersection(target);
         }
     }
@@ -114,8 +114,8 @@ function handleThumbnailIntersection(thumbnailElement) {
 
 function handlePosterIntersection(posterBackgroundElement) {
     posterBackgroundElement.classList.add('loading');
-    const posterContainer = posterBackgroundElement.closest('.folder__poster-container');
-    const posterImage = posterContainer.querySelector('.folder__poster-image');
+    const posterContainer = posterBackgroundElement.closest('.poster-container');
+    const posterImage = posterContainer.querySelector('.poster-image');
     const backgroundImage = new Image();
     
     backgroundImage.src = posterImage.src = createFullURL(posterBackgroundElement.dataset.src);
@@ -146,16 +146,16 @@ function createDiv(className, properties) {
 // ============================================================================
 
 function createDescription(photos, descriptionObject) {
-    const descriptionContainer = createDiv('folder__description');
-    const innerContainer = createDiv('folder__desc-inner');
+    const descriptionContainer = createDiv('description');
+    const innerContainer = createDiv('desc-inner');
 
     if (photos.length) {
-        const posterContainer = createDiv('folder__poster-container');
-        const posterBackground = createDiv('folder__poster-bg');
+        const posterContainer = createDiv('poster-container');
+        const posterBackground = createDiv('poster-bg');
         posterBackground.dataset.src = photos[0].path;
         
         const posterImage = document.createElement('img');
-        posterImage.className = 'folder__poster-image';
+        posterImage.className = 'poster-image';
         
         posterContainer.appendChild(posterBackground);
         posterContainer.appendChild(posterImage);
