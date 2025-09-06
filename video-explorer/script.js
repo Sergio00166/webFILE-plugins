@@ -20,11 +20,11 @@ let currentPath = basePath;
 // UTILITY FUNCTIONS
 // ============================================================================
 
-const createFullURL = function(path) { 
+function createFullURL(path) { 
     return path + '?cache'; 
 };
 
-const loadImage = function(imageElement) {
+function loadImage(imageElement) {
     if (typeof imageElement.decode === 'function') {
         return imageElement.decode();
     }
@@ -33,7 +33,7 @@ const loadImage = function(imageElement) {
     });
 };
 
-const getJSON = function(path) {
+function getJSON(path) {
     return cache[path] = cache[path] || fetch(path, { 
         headers: { Accept: 'application/json' } 
     })
@@ -45,7 +45,7 @@ const getJSON = function(path) {
     });
 };
 
-const getText = function(path) {
+function getText(path) {
     return fetch(path + '?cache', { 
         headers: { Accept: 'text/plain' } 
     })

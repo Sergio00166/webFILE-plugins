@@ -88,9 +88,14 @@ img { pointer-events: none; }
     background: #444;
     border-radius: 9px;
     padding: 4px 8px 4px 8px;
-    white-space: pre-wrap;
     -webkit-user-select: text;
     user-select: text;
+    /* Hide start */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: rtl;
+    text-align: left;
 }
 
 /* -------------------------
