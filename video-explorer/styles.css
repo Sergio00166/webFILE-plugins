@@ -334,7 +334,7 @@ img { pointer-events: none; }
     }
 }
 /* Hide everything if display too small */
-@media (max-width: 200px) { 
+@media (max-width: 200px) or (max-width: 120px) { 
     body { display: none; }
 }
 
