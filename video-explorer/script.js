@@ -256,7 +256,7 @@ function renderFolder(folderPath, focusBackName) {
 
     const containerElement = document.getElementById('container');
     containerElement.innerHTML = '';
-    document.getElementById('folder-name').textContent = decodeURIComponent(folderPath);
+    document.querySelector('.path-title').textContent = decodeURIComponent(folderPath);
 
     getJSON(folderPath).then(function(folderItems) {
         if (folderPath === basePath) {
