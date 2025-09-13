@@ -239,7 +239,7 @@ function goBack() {
         window.location.href = basePath.split('/').slice(0, -2).join('/');
         return;
     }
-    const parentPath = '/' + currentPathParts.slice(0, -1).join('/');
+    var parentPath = '/' + currentPathParts.slice(0, -1).join('/');
     const focusBackName = currentPathParts[currentPathParts.length - 1];
     if (!parentPath.endsWith('/')) parentPath += '/';
 
