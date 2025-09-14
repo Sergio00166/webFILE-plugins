@@ -77,7 +77,6 @@ img { pointer-events: none; }
 .path-bar button img {
     width: auto;
     height: 100%;
-    filter: invert(75%);
 }
 .path-title {
     flex: 1;
@@ -334,7 +333,7 @@ img { pointer-events: none; }
     }
 }
 /* Hide everything if display too small */
-@media (max-width: 200px) { 
+@media (max-width: 200px) or (max-height: 120px) { 
     body { display: none; }
 }
 
