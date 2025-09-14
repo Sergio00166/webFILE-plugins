@@ -77,7 +77,6 @@ img { pointer-events: none; }
 .path-bar button img {
     width: auto;
     height: 100%;
-    filter: invert(75%);
 }
 .path-title {
     flex: 1;
