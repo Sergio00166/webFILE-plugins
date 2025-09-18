@@ -235,16 +235,23 @@ function goBack() {
     const currentPathParts = currentPath.split('/').filter(Boolean);
     const basePathParts = basePath.split('/').filter(Boolean);
 
-    if (currentPathParts.length <= basePathParts.length) {
-        window.location.href = basePath.split('/').slice(0, -2).join('/');
+    const isAtOrAboveBase =
+    currentPathParts.length <= basePathParts.length &&
+    currentPath.startsWith(basePath);
+
+    if (isAtOrAboveBase) {
+        // Go one level above basePath
+        const exitPath = '/' + basePathParts.slice(0, -1).join('/');
+        window.location.href = exitPath || '/';
         return;
     }
-    var parentPath = '/' + currentPathParts.slice(0, -1).join('/');
+    // Go up one folder
+    let parentPath = '/' + currentPathParts.slice(0, -1).join('/');
     const focusBackName = currentPathParts[currentPathParts.length - 1];
     if (!parentPath.endsWith('/')) parentPath += '/';
-
     renderFolder(parentPath, focusBackName);
 }
+
 
 // ============================================================================
 // FOLDER RENDERING
@@ -464,4 +471,3 @@ document.addEventListener('keydown', function (event) {
 
 renderFolder(basePath);
 
- 
