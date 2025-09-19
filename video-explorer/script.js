@@ -306,8 +306,12 @@ function renderFolderContent(folderItems, containerElement, folderPath) {
     const nameBlock = createDiv('info');
     const titleElement = createDiv('title');
     const pathParts = folderPath.split('/').filter(Boolean);
-    titleElement.textContent = pathParts.length ? pathParts[pathParts.length - 1] : folderPath;
 
+    if (pathParts.length) {
+        titleElement.textContent = pathParts[pathParts.length - 1];
+    } else {
+        titleElement.textContent = folderPath;
+    }
     nameBlock.appendChild(titleElement);
     containerElement.appendChild(nameBlock);
 
@@ -376,12 +380,20 @@ document.addEventListener('keydown', e => {
         case 'arrowdown':
         case 'arrowup':
             e.preventDefault();
-            moveFocus(key === 'arrowup' ? -1 : 1);
+            if (key === 'arrowup') {
+                moveFocus(-1);
+            } else {
+                moveFocus(1);
+            }
             break;
         case 'home':
         case 'end':
             e.preventDefault();
-            moveFocus(key === 'end' ? Infinity : -Infinity);
+            if (key === 'end') {
+                moveFocus(Infinity);
+            } else {
+                moveFocus(-Infinity);
+            }
             break;
         case 'arrowleft':
             e.preventDefault();
