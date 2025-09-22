@@ -10,9 +10,9 @@ const cache = {};
 let currentPath = basePath;
 const container = document.getElementById('container');
 
-const intersectionObserver = new IntersectionObserver(handleIntersection, {
-    rootMargin: '200px'
-});
+const intersectionObserver = new IntersectionObserver(
+    handleIntersection, { rootMargin: '200px' }
+);
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -26,8 +26,7 @@ function loadImage(img) {
 function getJSON(path) {
     if (cache[path]) return cache[path];
     cache[path] = fetch(path, { headers: { Accept: 'application/json' } })
-        .then(r => r.json())
-        .catch(() => []);
+        .then(r => r.json()).catch(() => []);
     return cache[path];
 }
 
@@ -35,8 +34,7 @@ function getText(path) {
     const key = path + '|text';
     if (cache[key]) return cache[key];
     cache[key] = fetch(path + cache_suffix, { headers: { Accept: 'text/plain' } })
-        .then(r => r.text())
-        .catch(() => '');
+        .then(r => r.text()).catch(() => '');
     return cache[key];
 }
 
@@ -146,7 +144,6 @@ function createDescription(photos, descriptionObject) {
         intersectionObserver.observe(pbg);
         inner.appendChild(pc);
     }
-
     if (descriptionObject) {
         const td = createDiv('desc-text');
         td.style.visibility = 'hidden';
@@ -158,7 +155,6 @@ function createDescription(photos, descriptionObject) {
         });
         inner.appendChild(td);
     }
-
     desc.appendChild(inner);
     return desc;
 }
@@ -195,7 +191,9 @@ function appendGrid(parent, videos, folderPath) {
         card.appendChild(info);
         frag.appendChild(card);
 
-        if (i % chunk === chunk - 1 || i === videos.length - 1) grid.appendChild(frag);
+        if (i % chunk === chunk - 1 || i === videos.length - 1) {
+            grid.appendChild(frag);
+        }
     }
 }
 
@@ -234,7 +232,6 @@ function renderFolder(folderPath, focusBackName) {
             const descObj = extractDescription(items);
             if (photos.length || descObj) container.appendChild(createDescription(photos, descObj));
         }
-
         appendGrid(container, extractVideos(items), folderPath);
 
         const subs = extractSubfolders(items);
@@ -243,9 +240,9 @@ function renderFolder(folderPath, focusBackName) {
             renderSubfolder(subs, sc, folderPath, focusBackName);
             container.appendChild(sc);
         }
-
         if (focusBackName) {
-            waitForElement('[data-focus-me="1"]').then(el => el.focus()).catch(() => {});
+            waitForElement('[data-focus-me="1"]')
+                .then(el => el.focus()).catch(() => {});
         }
     });
 }
@@ -275,7 +272,11 @@ function renderFolderContent(folderItems, containerElement, folderPath) {
     info.appendChild(title);
     containerElement.appendChild(info);
 
-    if (photos.length || descObj) containerElement.appendChild(createDescription(photos, descObj));
+    if (photos.length || descObj) {
+        containerElement.appendChild(
+            createDescription(photos, descObj)
+        );
+    }
 }
 
 // ============================================================================
@@ -283,13 +284,11 @@ function renderFolderContent(folderItems, containerElement, folderPath) {
 // ============================================================================
 
 async function waitForElement(selector, maxTries, interval) {
-    maxTries = typeof maxTries === 'number' ? maxTries : 20;
-    interval = typeof interval === 'number' ? interval : 25;
     let tries = 0;
-    while (tries < maxTries) {
+    while (tries < 20) {
         const el = document.querySelector(selector);
         if (el) return el;
-        await new Promise(r => setTimeout(r, interval));
+        await new Promise(r => setTimeout(r, 25));
         tries++;
     }
     throw new Error('Element not found: ' + selector);
