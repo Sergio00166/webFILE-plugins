@@ -4,11 +4,13 @@ const { pathname } = window.location;
 const pathSegments = pathname.split('/');
 if (!pathSegments.pop().includes('.')) pathSegments.push('');
 const basePath = pathSegments.join('/') + '/';
-const cache_suffix = '?cache';
 
 const cache = {};
 let currentPath = basePath;
+const cache_suffix = '?cache';
+
 const container = document.getElementById('container');
+const elsel_str = '.grid > button, .subfolders > button';
 
 const intersectionObserver = new IntersectionObserver(
     handleIntersection, { rootMargin: '200px' }
@@ -26,7 +28,7 @@ function loadImage(img) {
 function getJSON(path) {
     if (cache[path]) return cache[path];
     cache[path] = fetch(path, { headers: { Accept: 'application/json' } })
-        .then(r => r.json()).catch(() => []);
+    .then(r => r.json()).catch(() => []);
     return cache[path];
 }
 
@@ -34,7 +36,7 @@ function getText(path) {
     const key = path + '|text';
     if (cache[key]) return cache[key];
     cache[key] = fetch(path + cache_suffix, { headers: { Accept: 'text/plain' } })
-        .then(r => r.text()).catch(() => '');
+    .then(r => r.text()).catch(() => '');
     return cache[key];
 }
 
@@ -45,10 +47,11 @@ function getText(path) {
 const extractPhotos = items => items.filter(i => i.type === 'photo');
 const extractVideos = items => items.filter(i => i.type === 'video');
 const extractDescription = items => items.find(i => i.type === 'text' && i.name === 'description.txt');
+
 function extractSubfolders(items) {
     return items
-        .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
-        .sort((a, b) => a.name.localeCompare(b.name));
+    .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // ============================================================================
@@ -63,15 +66,23 @@ function createDiv(className, props) {
 }
 
 function handleItemAction(el) {
-    if (el.classList.contains('folder')) {
+    const parent = el.parentElement;
+    const nameEl = el.querySelector('.title');
+    const name = nameEl ? nameEl.textContent : '';
+    const encoded = encodeURIComponent(name);
+
+    if (parent.classList.contains('subfolders')) {
         container.scrollTo(0, 0);
-        renderFolder(el.dataset.path);
+        const targetPath = currentPath + encoded + '/';
+        renderFolder(targetPath);
         return;
     }
-    if (el.classList.contains('card')) {
-        window.open(el.dataset.path, '_blank');
+    if (parent.classList.contains('grid')) {
+        const targetPath = currentPath + encoded;
+        window.open(targetPath, '_blank');
     }
 }
+
 
 // ============================================================================
 // INTERSECTION HANDLING
@@ -81,31 +92,37 @@ function handleIntersection(entries, observer) {
     for (const e of entries) {
         if (!e.isIntersecting) continue;
         observer.unobserve(e.target);
-        if (e.target.classList.contains('thumb')) handleThumbnailIntersection(e.target);
-        else if (e.target.classList.contains('poster-bg')) handlePosterIntersection(e.target);
+
+        if (e.target.classList.contains('thumb')) {
+            handleThumbnailIntersection(e.target);
+        }
+        else if (e.target.classList.contains('poster-bg')) {
+            handlePosterIntersection(e.target);
+        }
     }
 }
-
 function handleThumbnailIntersection(el) {
     el.classList.add('loading');
-    const folderPath = el.closest('.grid').dataset.folder;
+    const folderPath = currentPath + '.thumbnails/';
+
     getJSON(folderPath).then(list => {
         const videoName = el.dataset.video.replace(/\.[^/.]+$/, '');
         const match = list.find(item =>
-            item.name.startsWith(videoName + '.') &&
-            item.name.slice(videoName.length + 1).indexOf('.') === -1
+        item.name.startsWith(videoName + '.') &&
+        item.name.slice(videoName.length + 1).indexOf('.') === -1
         );
         if (!match) return;
         const img = new Image();
         img.src = match.path + cache_suffix;
-        el.textContent = '';
         el.appendChild(img);
+
         loadImage(img).finally(() => {
             el.classList.remove('loading');
             el.removeAttribute('data-video');
         });
     });
 }
+
 
 function handlePosterIntersection(bgEl) {
     bgEl.classList.add('loading');
@@ -117,7 +134,6 @@ function handlePosterIntersection(bgEl) {
     bimg.src = posterImg.src = src;
 
     Promise.all([loadImage(bimg), loadImage(posterImg)]).then(() => {
-        bgEl.innerHTML = '';
         bgEl.appendChild(bimg);
         posterImg.classList.add('loaded');
         bgEl.classList.remove('loading');
@@ -166,7 +182,7 @@ function createDescription(photos, descriptionObject) {
 function appendGrid(parent, videos, folderPath) {
     if (!videos.length) return;
     const grid = createDiv('grid');
-    grid.dataset.folder = folderPath + '.thumbnails/';
+    // removed: grid.dataset.folder = folderPath + '.thumbnails/';
     parent.appendChild(grid);
 
     const chunk = 8;
@@ -175,8 +191,7 @@ function appendGrid(parent, videos, folderPath) {
         if (i % chunk === 0) frag = document.createDocumentFragment();
 
         const v = videos[i];
-        const card = createDiv('card', { tabIndex: 0 });
-        card.dataset.path = v.path;
+        const card = document.createElement('button');
 
         const thumb = createDiv('thumb');
         thumb.dataset.video = v.name;
@@ -184,7 +199,7 @@ function appendGrid(parent, videos, folderPath) {
 
         const info = createDiv('info');
         const title = createDiv('title');
-        title.textContent = v.name.replace(/\.[^/.]+$/, '');
+        title.textContent = v.name;
         info.appendChild(title);
 
         card.appendChild(thumb);
@@ -242,7 +257,7 @@ function renderFolder(folderPath, focusBackName) {
         }
         if (focusBackName) {
             waitForElement('[data-focus-me="1"]')
-                .then(el => el.focus()).catch(() => {});
+            .then(el => el.focus()).catch(() => {});
         }
     });
 }
@@ -250,10 +265,12 @@ function renderFolder(folderPath, focusBackName) {
 function renderSubfolder(subfolders, containerElement, folderPath, focusBackName) {
     subfolders.forEach(sub => {
         const subPath = folderPath + sub.name + '/';
-        const el = createDiv('folder', { tabIndex: 0 });
+        const el = document.createElement('button');
+
         if (sub.name === focusBackName) el.dataset.focusMe = '1';
-        el.dataset.path = subPath;
+        // removed el.dataset.path assignment — we will compute path on click from currentPath + encoded name
         containerElement.appendChild(el);
+
         getJSON(subPath).then(items => {
             renderFolderContent(items, el, subPath);
             el.classList.add('loaded');
@@ -268,7 +285,12 @@ function renderFolderContent(folderItems, containerElement, folderPath) {
     const info = createDiv('info');
     const title = createDiv('title');
     const parts = folderPath.split('/').filter(Boolean);
-    title.textContent = parts.length ? parts[parts.length - 1] : folderPath;
+
+    if (parts.length) {
+        title.textContent = parts[parts.length - 1]
+    } else {
+        title.textContent = folderPath
+    }
     info.appendChild(title);
     containerElement.appendChild(info);
 
@@ -295,7 +317,7 @@ async function waitForElement(selector, maxTries, interval) {
 }
 
 function moveFocus(direction) {
-    const focusable = Array.from(document.querySelectorAll('.folder, .card'));
+    const focusable = Array.from(document.querySelectorAll(elsel_str));
     if (!focusable.length) return;
     let idx = focusable.indexOf(document.activeElement);
 
@@ -311,13 +333,13 @@ function moveFocus(direction) {
 // ============================================================================
 
 container.addEventListener('click', e => {
-    const clicked = e.target.closest('.folder, .card');
+    const clicked = e.target.closest(elsel_str);
     e.stopPropagation();
     if (clicked) handleItemAction(clicked);
 });
 
 container.addEventListener('keydown', e => {
-    const focused = e.target.closest('.folder, .card');
+    const focused = e.target.closest(elsel_str);
     if (focused && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight')) {
         e.preventDefault();
         handleItemAction(focused);
