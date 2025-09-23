@@ -267,16 +267,17 @@ button {
     align-items: center;
 }
 .desc-text {
+    width: 100%;
+    overflow: auto;
+    margin-left: 16px;
+    display: block;
+    text-align: left;
+    align-content: center;
     -webkit-user-select: text;
     user-select: text;
-    display: block;
-    align-content: center;
-    width: 100%;
-    height: var(--description_height);
-    margin-left: 16px;
-    overflow: auto;
     white-space: pre-wrap;
     scrollbar-width: thin;
+    height: var(--description_height);
     scrollbar-color: var(--accent) var(--description-bg);
 }
 
