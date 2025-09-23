@@ -83,7 +83,6 @@ function handleItemAction(el) {
     }
 }
 
-
 // ============================================================================
 // INTERSECTION HANDLING
 // ============================================================================
@@ -182,7 +181,6 @@ function createDescription(photos, descriptionObject) {
 function appendGrid(parent, videos, folderPath) {
     if (!videos.length) return;
     const grid = createDiv('grid');
-    // removed: grid.dataset.folder = folderPath + '.thumbnails/';
     parent.appendChild(grid);
 
     const chunk = 8;
