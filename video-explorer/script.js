@@ -107,8 +107,8 @@ function handleThumbnailIntersection(el) {
     getJSON(folderPath).then(list => {
         const videoName = el.dataset.video.replace(/\.[^/.]+$/, '');
         const match = list.find(item =>
-        item.name.startsWith(videoName + '.') &&
-        item.name.slice(videoName.length + 1).indexOf('.') === -1
+            item.name.startsWith(videoName + '.') &&
+            item.name.slice(videoName.length + 1).indexOf('.') === -1
         );
         if (!match) return;
         const img = new Image();
@@ -264,9 +264,7 @@ function renderSubfolder(subfolders, containerElement, folderPath, focusBackName
     subfolders.forEach(sub => {
         const subPath = folderPath + sub.name + '/';
         const el = document.createElement('button');
-
         if (sub.name === focusBackName) el.dataset.focusMe = '1';
-        // removed el.dataset.path assignment — we will compute path on click from currentPath + encoded name
         containerElement.appendChild(el);
 
         getJSON(subPath).then(items => {
@@ -279,7 +277,6 @@ function renderSubfolder(subfolders, containerElement, folderPath, focusBackName
 function renderFolderContent(folderItems, containerElement, folderPath) {
     const photos = extractPhotos(folderItems);
     const descObj = extractDescription(folderItems);
-
     const info = createDiv('info');
     const title = createDiv('title');
     const parts = folderPath.split('/').filter(Boolean);
