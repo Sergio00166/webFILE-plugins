@@ -12,8 +12,8 @@
 }
 
 /* -------------------------
-   Base
-   ------------------------- */
+ *  Base
+ *  ------------------------- */
 
 body {
     margin: 0 ;
@@ -30,13 +30,24 @@ body {
     -webkit-user-select: none;
     user-select: none;
 }
-img { pointer-events: none; }
-::-webkit-scrollbar-thumb { background: #555; }
-::-webkit-scrollbar-track { background: #1e1e1e; }
+img {
+    pointer-events: none;
+}
+button {
+    color: inherit;
+    border: none;
+    font-size: inherit;
+}
+::-webkit-scrollbar-thumb {
+    background: #555;
+}
+::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
 
 /* -------------------------
-   Main structure
-   ------------------------- */
+ *  Main structure
+ *  ------------------------- */
 
 #container {
     gap: 16px;
@@ -55,8 +66,8 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Path bar
-   ------------------------- */
+ *  Path bar
+ *  ------------------------- */
 
 .path-bar {
     display: flex;
@@ -69,7 +80,6 @@ img { pointer-events: none; }
 .path-bar button {
     padding: 0;
     background: none;
-    border: none;
     cursor: pointer;
     height: 20px;
     width: 20px;
@@ -98,14 +108,14 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Video Grid
-   ------------------------- */
+ *  Video Grid
+ *  ------------------------- */
 
 .grid {
     display: grid;
     gap: var(--gap);
 }
-.card {
+.grid > button {
     display: flex;
     overflow: hidden;
     cursor: pointer;
@@ -117,8 +127,8 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Thumbnails
-   ------------------------- */
+ *  Thumbnails
+ *  ------------------------- */
 
 .thumb {
     width: 100%;
@@ -155,8 +165,8 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Info / title
-   ------------------------- */
+ *  Info / title
+ *  ------------------------- */
 
 .info {
     padding: 0.75rem;
@@ -174,10 +184,10 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Folder tiles
-   ------------------------- */
+ *  Folder tiles
+ *  ------------------------- */
 
-.folder {
+.subfolders > button {
     opacity: 0;
     min-height: 80px;
     cursor: pointer;
@@ -186,14 +196,14 @@ img { pointer-events: none; }
     border-radius: var(--card-radius);
     transition: box-shadow 0.1s, opacity 0.2s;
 }
-.folder.loaded {
+.subfolders > button.loaded {
     opacity: 1;
     min-height: unset;
 }
 
 /* -------------------------
-   Poster container & image
-   ------------------------- */
+ *  Poster container & image
+ *  ------------------------- */
 
 .poster-container {
     aspect-ratio: 1/1;
@@ -240,8 +250,8 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Folder description
-   ------------------------- */
+ *  Folder description
+ *  ------------------------- */
 
 .description {
     padding: 1rem;
@@ -257,22 +267,23 @@ img { pointer-events: none; }
     align-items: center;
 }
 .desc-text {
+    width: 100%;
+    overflow: auto;
+    margin-left: 16px;
+    display: block;
+    text-align: left;
+    align-content: center;
     -webkit-user-select: text;
     user-select: text;
-    display: block;
-    align-content: center;
-    width: 100%;
-    height: var(--description_height);
-    margin-left: 16px;
-    overflow: auto;
     white-space: pre-wrap;
     scrollbar-width: thin;
+    height: var(--description_height);
     scrollbar-color: var(--accent) var(--description-bg);
 }
 
 /* -------------------------
-   Keyframes / animations
-   ------------------------- */
+ *  Keyframes / animations
+ *  ------------------------- */
 
 @keyframes pulse {
     0%,
@@ -285,8 +296,8 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Video Grid Responsive
-   ------------------------- */
+ *  Video Grid Responsive
+ *  ------------------------- */
 
 @media (min-width: 600px) {
     .grid { grid-template-columns: repeat(2, 1fr); }
@@ -311,8 +322,8 @@ img { pointer-events: none; }
 }
 
 /* -------------------------
-   Responsive
-   ------------------------- */
+ *  Responsive
+ *  ------------------------- */
 
 @media (max-width: 720px) {
     .desc-inner { flex-direction: column; }
@@ -333,20 +344,22 @@ img { pointer-events: none; }
     }
 }
 /* Hide everything if display too small */
-@media (max-width: 200px) or (max-height: 120px) { 
+@media (max-width: 200px) or (max-height: 120px) {
     body { display: none; }
 }
 
 /* -------------------------
-   Hover & focus
-   ------------------------- */
+ *  Hover & focus
+ *  ------------------------- */
 
 @media (hover: hover) {
-    .folder:hover, .card:hover {
+    .subfolders > button:hover,
+    .grid > button:hover {
         box-shadow: 0 0 4px #fff;
     }
 }
-.card:focus-visible, .folder:focus-visible {
+.subfolders > button:focus-visible,
+.grid > button:focus-visible {
     outline: 2px solid white;
 }
 

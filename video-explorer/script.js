@@ -1,63 +1,53 @@
 /* Code by Sergio00166 */
 
-// ============================================================================
-// MAIN DEFINITIONS
-// ============================================================================
-
 const { pathname } = window.location;
 const pathSegments = pathname.split('/');
 if (!pathSegments.pop().includes('.')) pathSegments.push('');
 const basePath = pathSegments.join('/') + '/';
-const cache_suffix = '?cache';
 
 const cache = {};
 let currentPath = basePath;
+const cache_suffix = '?cache';
 
-const intersectionObserver = new IntersectionObserver(handleIntersection, {
-    rootMargin: '200px'
-});
+const container = document.getElementById('container');
+const elsel_str = '.grid > button, .subfolders > button';
+
+const intersectionObserver = new IntersectionObserver(
+    handleIntersection, { rootMargin: '200px' }
+);
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
-function loadImage(imageElement) {
-    if (typeof imageElement.decode === 'function') {
-        return imageElement.decode();
-    }
-    return new Promise(resolve => { imageElement.onload = resolve; });
+function loadImage(img) {
+    if (typeof img.decode === 'function') return img.decode();
+    return new Promise(res => { img.onload = res; });
 }
 
 function getJSON(path) {
-    return cache[path] ||
-    (cache[path] = fetch(path, { headers: { Accept: 'application/json' } })
-    .then(r => r.json()).catch(() => []));
+    if (cache[path]) return cache[path];
+    cache[path] = fetch(path, { headers: { Accept: 'application/json' } })
+        .then(r => r.json()).catch(() => []);
+    return cache[path];
 }
 
 function getText(path) {
     return fetch(path + cache_suffix, { headers: { Accept: 'text/plain' } })
-    .then(r => r.text()).catch(() => '');
+        .then(r => r.text()).catch(() => '');
 }
 
 // ============================================================================
 // FOLDER RENDERING HELPERS
 // ============================================================================
 
-function extractPhotos(items) {
-    return items.filter(item => item.type === 'photo');
-}
-
-function extractDescription(items) {
-    return items.find(item => item.type === 'text' && item.name === 'description.txt');
-}
-
-function extractVideos(items) {
-    return items.filter(item => item.type === 'video');
-}
+const extractPhotos = items => items.filter(i => i.type === 'photo');
+const extractVideos = items => items.filter(i => i.type === 'video');
+const extractDescription = items => items.find(i => i.type === 'text' && i.name === 'description.txt');
 
 function extractSubfolders(items) {
     return items
-    .filter(item => item.type === 'directory' && item.name !== '.thumbnails')
+    .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -65,19 +55,28 @@ function extractSubfolders(items) {
 // ELEMENTs HELPERs
 // ============================================================================
 
-function createDiv(className, props = {}) {
-    const div = document.createElement('div');
-    div.className = className;
-    Object.assign(div, props);
-    return div;
+function createDiv(className, props) {
+    const d = document.createElement('div');
+    d.className = className;
+    if (props) Object.assign(d, props);
+    return d;
 }
 
-function handleItemAction(element) {
-    if (element.classList.contains('folder')) {
-        window.scrollTo(0, 0);
-        renderFolder(element.dataset.path);
-    } else if (element.classList.contains('card')) {
-        window.open(element.dataset.path, '_blank');
+function handleItemAction(el) {
+    const parent = el.parentElement;
+    const nameEl = el.querySelector('.title');
+    const name = nameEl ? nameEl.textContent : '';
+    const encoded = encodeURIComponent(name);
+
+    if (parent.classList.contains('subfolders')) {
+        container.scrollTo(0, 0);
+        const targetPath = currentPath + encoded + '/';
+        renderFolder(targetPath);
+        return;
+    }
+    if (parent.classList.contains('grid')) {
+        const targetPath = currentPath + encoded;
+        window.open(targetPath, '_blank');
     }
 }
 
@@ -86,57 +85,55 @@ function handleItemAction(element) {
 // ============================================================================
 
 function handleIntersection(entries, observer) {
-    for (let i = 0; i < entries.length; i++) {
-        const { target, isIntersecting } = entries[i];
-        if (!isIntersecting) continue;
-        observer.unobserve(target);
+    for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        observer.unobserve(e.target);
 
-        if (target.classList.contains('thumb')) {
-            handleThumbnailIntersection(target);
-        } else if (target.classList.contains('poster-bg')) {
-            handlePosterIntersection(target);
+        if (e.target.classList.contains('thumb')) {
+            handleThumbnailIntersection(e.target);
+        }
+        else if (e.target.classList.contains('poster-bg')) {
+            handlePosterIntersection(e.target);
         }
     }
 }
+function handleThumbnailIntersection(el) {
+    el.classList.add('loading');
+    const folderPath = currentPath + '.thumbnails/';
 
-function handleThumbnailIntersection(thumbnailElement) {
-    thumbnailElement.classList.add('loading');
-    const folderPath = thumbnailElement.closest('.grid').dataset.folder;
-
-    getJSON(folderPath).then(fileList => {
-        const videoName = thumbnailElement.dataset.video.replace(/\.[^/.]+$/, '');
-        const match = fileList.find(item =>
+    getJSON(folderPath).then(list => {
+        const videoName = el.dataset.video.replace(/\.[^/.]+$/, '');
+        const match = list.find(item =>
             item.name.startsWith(videoName + '.') &&
             item.name.slice(videoName.length + 1).indexOf('.') === -1
         );
         if (!match) return;
+        const img = new Image();
+        img.src = match.path + cache_suffix;
+        el.appendChild(img);
 
-        const thumbnailImage = new Image();
-        thumbnailImage.src = match.path + cache_suffix;
-        thumbnailElement.textContent = '';
-        thumbnailElement.appendChild(thumbnailImage);
-
-        loadImage(thumbnailImage).finally(() => {
-            thumbnailElement.classList.remove('loading');
-            thumbnailElement.removeAttribute('data-video');
+        loadImage(img).finally(() => {
+            el.classList.remove('loading');
+            el.removeAttribute('data-video');
         });
     });
 }
 
-function handlePosterIntersection(posterBackgroundElement) {
-    posterBackgroundElement.classList.add('loading');
-    const posterContainer = posterBackgroundElement.closest('.poster-container');
-    const posterImage = posterContainer.querySelector('.poster-image');
-    const backgroundImage = new Image();
 
-    backgroundImage.src = posterImage.src = posterBackgroundElement.dataset.src + cache_suffix;
+function handlePosterIntersection(bgEl) {
+    bgEl.classList.add('loading');
+    const pc = bgEl.closest('.poster-container');
+    const posterImg = pc.querySelector('.poster-image');
 
-    Promise.all([loadImage(backgroundImage), loadImage(posterImage)]).then(() => {
-        posterBackgroundElement.innerHTML = '';
-        posterBackgroundElement.appendChild(backgroundImage);
-        posterImage.classList.add('loaded');
-        posterBackgroundElement.classList.remove('loading');
-        posterBackgroundElement.removeAttribute('data-src');
+    const bimg = new Image();
+    const src = bgEl.dataset.src + cache_suffix;
+    bimg.src = posterImg.src = src;
+
+    Promise.all([loadImage(bimg), loadImage(posterImg)]).then(() => {
+        bgEl.appendChild(bimg);
+        posterImg.classList.add('loaded');
+        bgEl.classList.remove('loading');
+        bgEl.removeAttribute('data-src');
     });
 }
 
@@ -145,75 +142,68 @@ function handlePosterIntersection(posterBackgroundElement) {
 // ============================================================================
 
 function createDescription(photos, descriptionObject) {
-    const descriptionContainer = createDiv('description');
-    const innerContainer = createDiv('desc-inner');
+    const desc = createDiv('description');
+    const inner = createDiv('desc-inner');
 
     if (photos.length) {
-        const posterContainer = createDiv('poster-container');
-        const posterBackground = createDiv('poster-bg');
-        posterBackground.dataset.src = photos[0].path;
-
-        const posterImage = document.createElement('img');
-        posterImage.className = 'poster-image';
-
-        posterContainer.appendChild(posterBackground);
-        posterContainer.appendChild(posterImage);
-        intersectionObserver.observe(posterBackground);
-        innerContainer.appendChild(posterContainer);
+        const pc = createDiv('poster-container');
+        const pbg = createDiv('poster-bg');
+        pbg.dataset.src = photos[0].path;
+        const pimg = document.createElement('img');
+        pimg.className = 'poster-image';
+        pc.appendChild(pbg);
+        pc.appendChild(pimg);
+        intersectionObserver.observe(pbg);
+        inner.appendChild(pc);
     }
     if (descriptionObject) {
-        const textDiv = createDiv('desc-text');
-        textDiv.style.visibility = 'hidden';
-        textDiv.style.opacity = '0';
-
-        getText(descriptionObject.path).then(text => {
-            textDiv.textContent = text;
-            textDiv.style.visibility = 'visible';
-            textDiv.style.opacity = '1';
+        const td = createDiv('desc-text');
+        td.style.visibility = 'hidden';
+        td.style.opacity = '0';
+        getText(descriptionObject.path).then(t => {
+            td.textContent = t;
+            td.style.visibility = '';
+            td.style.opacity = '';
         });
-        innerContainer.appendChild(textDiv);
+        inner.appendChild(td);
     }
-    descriptionContainer.appendChild(innerContainer);
-    return descriptionContainer;
+    desc.appendChild(inner);
+    return desc;
 }
 
 // ============================================================================
 // GRID RENDERING
 // ============================================================================
 
-function appendGrid(parentContainer, videos, folderPath) {
+function appendGrid(parent, videos, folderPath) {
     if (!videos.length) return;
+    const grid = createDiv('grid');
+    parent.appendChild(grid);
 
-    const gridElement = createDiv('grid');
-    gridElement.dataset.folder = folderPath + '.thumbnails/';
-    parentContainer.appendChild(gridElement);
+    const chunk = 8;
+    let frag;
+    for (let i = 0; i < videos.length; i++) {
+        if (i % chunk === 0) frag = document.createDocumentFragment();
 
-    const chunkSize = 8;
-    const total = videos.length;
+        const v = videos[i];
+        const card = document.createElement('button');
 
-    for (let start = 0; start < total; start += chunkSize) {
-        const fragment = document.createDocumentFragment();
+        const thumb = createDiv('thumb');
+        thumb.dataset.video = v.name;
+        intersectionObserver.observe(thumb);
 
-        for (let i = start, end = Math.min(start + chunkSize, total); i < end; i++) {
-            const video = videos[i];
+        const info = createDiv('info');
+        const title = createDiv('title');
+        title.textContent = v.name;
+        info.appendChild(title);
 
-            const videoCard = createDiv('card', { tabIndex: 0 });
-            videoCard.dataset.path = video.path;
+        card.appendChild(thumb);
+        card.appendChild(info);
+        frag.appendChild(card);
 
-            const thumbnail = createDiv('thumb');
-            thumbnail.dataset.video = video.name;
-            intersectionObserver.observe(thumbnail);
-
-            const infoContainer = createDiv('info');
-            const titleElement = createDiv('title');
-            titleElement.textContent = video.name.replace(/\.[^/.]+$/, '');
-
-            infoContainer.appendChild(titleElement);
-            videoCard.appendChild(thumbnail);
-            videoCard.appendChild(infoContainer);
-            fragment.appendChild(videoCard);
+        if (i % chunk === chunk - 1 || i === videos.length - 1) {
+            grid.appendChild(frag);
         }
-        gridElement.appendChild(fragment);
     }
 }
 
@@ -222,132 +212,112 @@ function appendGrid(parentContainer, videos, folderPath) {
 // ============================================================================
 
 function goBack() {
-    const currentParts = currentPath.split('/').filter(Boolean);
-    const baseParts = basePath.split('/').filter(Boolean);
+    const cur = currentPath.split('/').filter(Boolean);
+    const base = basePath.split('/').filter(Boolean);
 
-    const isAtOrAboveBase =
-    currentParts.length <= baseParts.length &&
-    currentPath.startsWith(basePath);
-
-    if (isAtOrAboveBase) {
-        const exitPath = '/' + baseParts.slice(0, -1).join('/');
+    if (cur.length <= base.length && currentPath.indexOf(basePath) === 0) {
+        const exitPath = '/' + base.slice(0, -1).join('/');
         window.location.href = exitPath || '/';
         return;
     }
-    let parentPath = '/' + currentParts.slice(0, -1).join('/');
-    const focusBackName = currentParts[currentParts.length - 1];
-    if (!parentPath.endsWith('/')) parentPath += '/';
-    renderFolder(parentPath, focusBackName);
+    let parent = '/' + cur.slice(0, -1).join('/');
+    const focusBackName = cur[cur.length - 1];
+    if (parent.charAt(parent.length - 1) !== '/') parent += '/';
+    renderFolder(parent, focusBackName);
 }
 
 // ============================================================================
 // FOLDER RENDERING
 // ============================================================================
 
-function renderFolder(folderPath, focusBackName = '') {
+function renderFolder(folderPath, focusBackName) {
     currentPath = folderPath;
+    container.innerHTML = '';
+    const titleEl = document.querySelector('.path-title');
+    if (titleEl) titleEl.textContent = decodeURIComponent(folderPath);
 
-    const containerElement = document.getElementById('container');
-    containerElement.innerHTML = '';
-    document.querySelector('.path-title').textContent = decodeURIComponent(folderPath);
-
-    getJSON(folderPath).then(folderItems => {
+    getJSON(folderPath).then(items => {
         if (folderPath === basePath) {
-            const photos = extractPhotos(folderItems);
-            const descriptionObject = extractDescription(folderItems);
-            if (photos.length || descriptionObject) {
-                containerElement.appendChild(createDescription(photos, descriptionObject));
-            }
+            const photos = extractPhotos(items);
+            const descObj = extractDescription(items);
+            if (photos.length || descObj) container.appendChild(createDescription(photos, descObj));
         }
-        appendGrid(containerElement, extractVideos(folderItems), folderPath);
+        appendGrid(container, extractVideos(items), folderPath);
 
-        const subfolders = extractSubfolders(folderItems);
-        if (subfolders.length) {
-            const subfoldersContainer = createDiv('subfolders');
-            renderSubfolder(subfolders, subfoldersContainer, folderPath, focusBackName);
-            containerElement.appendChild(subfoldersContainer);
+        const subs = extractSubfolders(items);
+        if (subs.length) {
+            const sc = createDiv('subfolders');
+            renderSubfolder(subs, sc, folderPath, focusBackName);
+            container.appendChild(sc);
         }
         if (focusBackName) {
-            waitForElement('[data-focus-me="1"]').then(el => el.focus());
+            waitForElement('[data-focus-me="1"]')
+                .then(el => el.focus()).catch(() => {});
         }
     });
 }
 
-function renderSubfolder(subfolders, container, folderPath, focusBackName) {
-    const chunkSize = 4;
-    let currentIndex = 0;
+function renderSubfolder(subfolders, containerElement, folderPath, focusBackName) {
+    subfolders.forEach(sub => {
+        const subPath = folderPath + sub.name + '/';
+        const el = document.createElement('button');
+        if (sub.name === focusBackName) el.dataset.focusMe = '1';
+        containerElement.appendChild(el);
 
-    while (currentIndex < subfolders.length) {
-        const end = Math.min(currentIndex + chunkSize, subfolders.length);
-
-        for (;currentIndex < end; currentIndex++) {
-            const subfolder = subfolders[currentIndex];
-            const subfolderPath = folderPath + subfolder.name + '/';
-            const folderElement = createDiv('folder', { tabIndex: 0 });
-
-            if (subfolder.name === focusBackName) {
-                folderElement.dataset.focusMe = '1';
-            }
-            folderElement.dataset.path = subfolderPath;
-            container.appendChild(folderElement);
-
-            getJSON(subfolderPath).then(items => {
-                renderFolderContent(items, folderElement, subfolderPath);
-                folderElement.classList.add('loaded');
-            });
-        }
-    }
+        getJSON(subPath).then(items => {
+            renderFolderContent(items, el, subPath);
+            el.classList.add('loaded');
+        });
+    });
 }
 
 function renderFolderContent(folderItems, containerElement, folderPath) {
     const photos = extractPhotos(folderItems);
-    const descriptionObject = extractDescription(folderItems);
+    const descObj = extractDescription(folderItems);
+    const info = createDiv('info');
+    const title = createDiv('title');
+    const parts = folderPath.split('/').filter(Boolean);
 
-    const nameBlock = createDiv('info');
-    const titleElement = createDiv('title');
-    const pathParts = folderPath.split('/').filter(Boolean);
-
-    if (pathParts.length) {
-        titleElement.textContent = pathParts[pathParts.length - 1];
+    if (parts.length) {
+        title.textContent = parts[parts.length - 1]
     } else {
-        titleElement.textContent = folderPath;
+        title.textContent = folderPath
     }
-    nameBlock.appendChild(titleElement);
-    containerElement.appendChild(nameBlock);
+    info.appendChild(title);
+    containerElement.appendChild(info);
 
-    if (photos.length || descriptionObject) {
-        containerElement.appendChild(createDescription(photos, descriptionObject));
+    if (photos.length || descObj) {
+        containerElement.appendChild(
+            createDescription(photos, descObj)
+        );
     }
 }
 
 // ============================================================================
-// UTILITY FUNCTIONS
+// UTIL — WAIT & FOCUS
 // ============================================================================
 
-async function waitForElement(selector, maxTries = 20, interval = 25) {
+async function waitForElement(selector, maxTries, interval) {
     let tries = 0;
-    while (tries < maxTries) {
+    while (tries < 20) {
         const el = document.querySelector(selector);
         if (el) return el;
-        await new Promise(resolve => setTimeout(resolve, interval));
+        await new Promise(r => setTimeout(r, 25));
         tries++;
     }
     throw new Error('Element not found: ' + selector);
 }
 
 function moveFocus(direction) {
-    const focusable = Array.from(document.querySelectorAll('.folder, .card'));
+    const focusable = Array.from(document.querySelectorAll(elsel_str));
     if (!focusable.length) return;
-    let currentIndex = focusable.indexOf(document.activeElement);
+    let idx = focusable.indexOf(document.activeElement);
 
-    if (direction === -Infinity) {
-        currentIndex = 0;
-    } else if (direction === Infinity) {
-        currentIndex = focusable.length - 1;
-    } else {
-        currentIndex = (currentIndex + direction + focusable.length) % focusable.length;
-    }
-    focusable[currentIndex].focus();
+    if (direction === -Infinity) idx = 0;
+    else if (direction === Infinity) idx = focusable.length - 1;
+    else idx = (idx + direction + focusable.length) % focusable.length;
+
+    focusable[idx].focus();
 }
 
 // ============================================================================
@@ -355,16 +325,16 @@ function moveFocus(direction) {
 // ============================================================================
 
 container.addEventListener('click', e => {
-    const clickedItem = e.target.closest('.folder, .card');
+    const clicked = e.target.closest(elsel_str);
     e.stopPropagation();
-    if (clickedItem) handleItemAction(clickedItem);
+    if (clicked) handleItemAction(clicked);
 });
 
 container.addEventListener('keydown', e => {
-    const focusedItem = e.target.closest('.folder, .card');
-    if (['Enter', ' ', 'ArrowRight'].includes(e.key) && focusedItem) {
+    const focused = e.target.closest(elsel_str);
+    if (focused && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight')) {
         e.preventDefault();
-        handleItemAction(focusedItem);
+        handleItemAction(focused);
     }
 });
 
@@ -380,20 +350,14 @@ document.addEventListener('keydown', e => {
         case 'arrowdown':
         case 'arrowup':
             e.preventDefault();
-            if (key === 'arrowup') {
-                moveFocus(-1);
-            } else {
-                moveFocus(1);
-            }
+            if (key === 'arrowup') moveFocus(-1);
+            else moveFocus(1);
             break;
         case 'home':
         case 'end':
             e.preventDefault();
-            if (key === 'end') {
-                moveFocus(Infinity);
-            } else {
-                moveFocus(-Infinity);
-            }
+            if (key === 'end') moveFocus(Infinity);
+            else moveFocus(-Infinity);
             break;
         case 'arrowleft':
             e.preventDefault();
