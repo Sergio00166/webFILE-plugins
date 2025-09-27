@@ -28,16 +28,13 @@ function loadImage(img) {
 function getJSON(path) {
     if (cache[path]) return cache[path];
     cache[path] = fetch(path, { headers: { Accept: 'application/json' } })
-    .then(r => r.json()).catch(() => []);
+        .then(r => r.json()).catch(() => []);
     return cache[path];
 }
 
 function getText(path) {
-    const key = path + '|text';
-    if (cache[key]) return cache[key];
-    cache[key] = fetch(path + cache_suffix, { headers: { Accept: 'text/plain' } })
-    .then(r => r.text()).catch(() => '');
-    return cache[key];
+    return fetch(path + cache_suffix, { headers: { Accept: 'text/plain' } })
+        .then(r => r.text()).catch(() => '');
 }
 
 // ============================================================================
@@ -255,7 +252,7 @@ function renderFolder(folderPath, focusBackName) {
         }
         if (focusBackName) {
             waitForElement('[data-focus-me="1"]')
-            .then(el => el.focus()).catch(() => {});
+                .then(el => el.focus()).catch(() => {});
         }
     });
 }
