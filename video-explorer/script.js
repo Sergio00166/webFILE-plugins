@@ -1,58 +1,66 @@
-/* Code by Sergio00166 */
+// Code by Sergio00166
 
 const { pathname } = window.location;
 const pathSegments = pathname.split('/');
-if (!pathSegments.pop().includes('.')) pathSegments.push('');
+if (!pathSegments.pop().includes('.')) {
+    pathSegments.push('');
+}
 const basePath = pathSegments.join('/') + '/';
 
 const cache = {};
 let currentPath = basePath;
 const cache_suffix = '?cache';
+const OBS_ROOT_MARGIN = '200px';
 
 const container = document.getElementById('container');
 const elsel_str = '.grid > button, .subfolders > button';
-
-const intersectionObserver = new IntersectionObserver(
-    handleIntersection, { rootMargin: '200px' }
-);
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
 function loadImage(img) {
-    if (typeof img.decode === 'function') return img.decode();
+    if (typeof img.decode === 'function') {
+        return img.decode();
+    }
     return new Promise(res => { img.onload = res; });
 }
 
 function getJSON(path) {
     if (cache[path]) return cache[path];
     cache[path] = fetch(path, { headers: { Accept: 'application/json' } })
-        .then(r => r.json()).catch(() => []);
+        .then(r => r.json())
+        .catch(() => []);
     return cache[path];
 }
 
 function getText(path) {
     return fetch(path + cache_suffix, { headers: { Accept: 'text/plain' } })
-        .then(r => r.text()).catch(() => '');
+        .then(r => r.text())
+        .catch(() => '');
 }
 
 // ============================================================================
 // FOLDER RENDERING HELPERS
 // ============================================================================
 
-const extractPhotos = items => items.filter(i => i.type === 'photo');
-const extractVideos = items => items.filter(i => i.type === 'video');
-const extractDescription = items => items.find(i => i.type === 'text' && i.name === 'description.txt');
-
+function extractPhotos(items) {
+    return items.filter(i => i.type === 'photo');
+}
+function extractVideos(items) {
+    return items.filter(i => i.type === 'video');
+}
+function extractDescription(items) {
+    return items.find(i => i.type === 'text' && i.name === 'description.txt');
+}
 function extractSubfolders(items) {
     return items
-    .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
-    .sort((a, b) => a.name.localeCompare(b.name));
+        .filter(i => i.type === 'directory' && i.name !== '.thumbnails')
+        .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // ============================================================================
-// ELEMENTs HELPERs
+// ELEMENT HELPERS
 // ============================================================================
 
 function createDiv(className, props) {
@@ -65,7 +73,8 @@ function createDiv(className, props) {
 function handleItemAction(el) {
     const parent = el.parentElement;
     const nameEl = el.querySelector('.title');
-    const name = nameEl ? nameEl.textContent : '';
+    let name = '';
+    if (nameEl) name = nameEl.textContent;
     const encoded = encodeURIComponent(name);
 
     if (parent.classList.contains('subfolders')) {
@@ -81,33 +90,39 @@ function handleItemAction(el) {
 }
 
 // ============================================================================
-// INTERSECTION HANDLING
+// GENERIC OBSERVER
 // ============================================================================
 
-function handleIntersection(entries, observer) {
-    for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        observer.unobserve(e.target);
-
-        if (e.target.classList.contains('thumb')) {
-            handleThumbnailIntersection(e.target);
+function attachObserver(el, callback) {
+    const obs = new IntersectionObserver((entries, o) => {
+        for (const e of entries) {
+            if (e.isIntersecting) {
+                o.unobserve(e.target);
+                callback(e.target);
+            }
         }
-        else if (e.target.classList.contains('poster-bg')) {
-            handlePosterIntersection(e.target);
-        }
-    }
+    }, { rootMargin: OBS_ROOT_MARGIN });
+    obs.observe(el);
 }
-function handleThumbnailIntersection(el) {
+
+// ============================================================================
+// OBSERVER CALLBACKS
+// ============================================================================
+
+function loadThumbnail(el, videoName) {
     el.classList.add('loading');
     const folderPath = currentPath + '.thumbnails/';
 
     getJSON(folderPath).then(list => {
-        const videoName = el.dataset.video.replace(/\.[^/.]+$/, '');
+        const baseName = videoName.replace(/\.[^/.]+$/, '');
         const match = list.find(item =>
-            item.name.startsWith(videoName + '.') &&
-            item.name.slice(videoName.length + 1).indexOf('.') === -1
+            item.name.startsWith(baseName + '.') &&
+            item.name.slice(baseName.length + 1).indexOf('.') === -1
         );
-        if (!match) return;
+        if (!match) {
+            el.classList.remove('loading');
+            return;
+        }
         const img = new Image();
         img.src = match.path + cache_suffix;
         el.appendChild(img);
@@ -119,22 +134,33 @@ function handleThumbnailIntersection(el) {
     });
 }
 
+function loadFolderPoster(el, photos, descObj) {
+    // Poster
+    if (photos.length) {
+        const pc = el.querySelector('.poster-container');
+        const pbg = pc.querySelector('.poster-bg');
+        const pimg = pc.querySelector('.poster-image');
+        const bimg = new Image();
+        const src = photos[0].path + cache_suffix;
+        bimg.src = src;
+        pimg.src = src;
 
-function handlePosterIntersection(bgEl) {
-    bgEl.classList.add('loading');
-    const pc = bgEl.closest('.poster-container');
-    const posterImg = pc.querySelector('.poster-image');
+        Promise.all([loadImage(bimg), loadImage(pimg)]).then(() => {
+            pbg.appendChild(bimg);
+            pimg.classList.add('loaded');
+            pbg.classList.remove('loading');
+        });
+    }
 
-    const bimg = new Image();
-    const src = bgEl.dataset.src + cache_suffix;
-    bimg.src = posterImg.src = src;
-
-    Promise.all([loadImage(bimg), loadImage(posterImg)]).then(() => {
-        bgEl.appendChild(bimg);
-        posterImg.classList.add('loaded');
-        bgEl.classList.remove('loading');
-        bgEl.removeAttribute('data-src');
-    });
+    // Description text
+    if (descObj) {
+        const td = el.querySelector('.desc-text');
+        getText(descObj.path).then(t => {
+            td.textContent = t;
+            td.style.visibility = '';
+            td.style.opacity = '';
+        });
+    }
 }
 
 // ============================================================================
@@ -148,25 +174,20 @@ function createDescription(photos, descriptionObject) {
     if (photos.length) {
         const pc = createDiv('poster-container');
         const pbg = createDiv('poster-bg');
-        pbg.dataset.src = photos[0].path;
+        pbg.classList.add('loading');
         const pimg = document.createElement('img');
         pimg.className = 'poster-image';
         pc.appendChild(pbg);
         pc.appendChild(pimg);
-        intersectionObserver.observe(pbg);
         inner.appendChild(pc);
     }
     if (descriptionObject) {
         const td = createDiv('desc-text');
         td.style.visibility = 'hidden';
         td.style.opacity = '0';
-        getText(descriptionObject.path).then(t => {
-            td.textContent = t;
-            td.style.visibility = '';
-            td.style.opacity = '';
-        });
         inner.appendChild(td);
     }
+
     desc.appendChild(inner);
     return desc;
 }
@@ -175,8 +196,8 @@ function createDescription(photos, descriptionObject) {
 // GRID RENDERING
 // ============================================================================
 
-function appendGrid(parent, videos, folderPath) {
-    if (!videos.length) return;
+function appendGrid(parent, videos) {
+    if (videos.length === 0) return;
     const grid = createDiv('grid');
     parent.appendChild(grid);
 
@@ -190,7 +211,7 @@ function appendGrid(parent, videos, folderPath) {
 
         const thumb = createDiv('thumb');
         thumb.dataset.video = v.name;
-        intersectionObserver.observe(thumb);
+        attachObserver(thumb, el => loadThumbnail(el, v.name));
 
         const info = createDiv('info');
         const title = createDiv('title');
@@ -208,25 +229,6 @@ function appendGrid(parent, videos, folderPath) {
 }
 
 // ============================================================================
-// NAVIGATION
-// ============================================================================
-
-function goBack() {
-    const cur = currentPath.split('/').filter(Boolean);
-    const base = basePath.split('/').filter(Boolean);
-
-    if (cur.length <= base.length && currentPath.indexOf(basePath) === 0) {
-        const exitPath = '/' + base.slice(0, -1).join('/');
-        window.location.href = exitPath || '/';
-        return;
-    }
-    let parent = '/' + cur.slice(0, -1).join('/');
-    const focusBackName = cur[cur.length - 1];
-    if (parent.charAt(parent.length - 1) !== '/') parent += '/';
-    renderFolder(parent, focusBackName);
-}
-
-// ============================================================================
 // FOLDER RENDERING
 // ============================================================================
 
@@ -240,9 +242,14 @@ function renderFolder(folderPath, focusBackName) {
         if (folderPath === basePath) {
             const photos = extractPhotos(items);
             const descObj = extractDescription(items);
-            if (photos.length || descObj) container.appendChild(createDescription(photos, descObj));
+            if (photos.length || descObj) {
+                const descEl = createDescription(photos, descObj);
+                container.appendChild(descEl);
+                attachObserver(descEl, el => loadFolderPoster(el, photos, descObj));
+            }
         }
-        appendGrid(container, extractVideos(items), folderPath);
+
+        appendGrid(container, extractVideos(items));
 
         const subs = extractSubfolders(items);
         if (subs.length) {
@@ -250,9 +257,11 @@ function renderFolder(folderPath, focusBackName) {
             renderSubfolder(subs, sc, folderPath, focusBackName);
             container.appendChild(sc);
         }
+
         if (focusBackName) {
             waitForElement('[data-focus-me="1"]')
-                .then(el => el.focus()).catch(() => {});
+                .then(el => el.focus())
+                .catch(() => {});
         }
     });
 }
@@ -277,33 +286,39 @@ function renderFolderContent(folderItems, containerElement, folderPath) {
     const info = createDiv('info');
     const title = createDiv('title');
     const parts = folderPath.split('/').filter(Boolean);
-
-    if (parts.length) {
-        title.textContent = parts[parts.length - 1]
-    } else {
-        title.textContent = folderPath
-    }
+    title.textContent = parts.length ? parts[parts.length - 1] : folderPath;
     info.appendChild(title);
     containerElement.appendChild(info);
 
     if (photos.length || descObj) {
-        containerElement.appendChild(
-            createDescription(photos, descObj)
-        );
+        const descEl = createDescription(photos, descObj);
+        containerElement.appendChild(descEl);
+        attachObserver(descEl, el => loadFolderPoster(el, photos, descObj));
     }
 }
 
 // ============================================================================
-// UTIL — WAIT & FOCUS
+// NAVIGATION & FOCUS
 // ============================================================================
 
-async function waitForElement(selector, maxTries, interval) {
-    let tries = 0;
-    while (tries < 20) {
+function goBack() {
+    const cur = currentPath.split('/').filter(Boolean);
+    const base = basePath.split('/').filter(Boolean);
+    if (cur.length <= base.length && currentPath.indexOf(basePath) === 0) {
+        const exitPath = '/' + base.slice(0, -1).join('/') || '/';
+        window.location.href = exitPath;
+        return;
+    }
+    let parent = '/' + cur.slice(0, -1).join('/');
+    if (!parent.endsWith('/')) parent += '/';
+    renderFolder(parent, cur[cur.length - 1]);
+}
+
+async function waitForElement(selector) {
+    for (let i = 0; i < 20; i++) {
         const el = document.querySelector(selector);
         if (el) return el;
         await new Promise(r => setTimeout(r, 25));
-        tries++;
     }
     throw new Error('Element not found: ' + selector);
 }
@@ -312,16 +327,14 @@ function moveFocus(direction) {
     const focusable = Array.from(document.querySelectorAll(elsel_str));
     if (!focusable.length) return;
     let idx = focusable.indexOf(document.activeElement);
-
     if (direction === -Infinity) idx = 0;
     else if (direction === Infinity) idx = focusable.length - 1;
     else idx = (idx + direction + focusable.length) % focusable.length;
-
     focusable[idx].focus();
 }
 
 // ============================================================================
-// EVENT LISTENERS - CONTAINER
+// EVENT LISTENERS
 // ============================================================================
 
 container.addEventListener('click', e => {
@@ -332,45 +345,28 @@ container.addEventListener('click', e => {
 
 container.addEventListener('keydown', e => {
     const focused = e.target.closest(elsel_str);
-    if (focused && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight')) {
+    if (focused && ['Enter', ' ', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         handleItemAction(focused);
     }
 });
-
-// ============================================================================
-// EVENT LISTENERS - KEYBOARD SHORTCUTS
-// ============================================================================
 
 document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
     const key = e.key.toLowerCase();
 
     switch (key) {
-        case 'arrowdown':
-        case 'arrowup':
-            e.preventDefault();
-            if (key === 'arrowup') moveFocus(-1);
-            else moveFocus(1);
-            break;
-        case 'home':
-        case 'end':
-            e.preventDefault();
-            if (key === 'end') moveFocus(Infinity);
-            else moveFocus(-Infinity);
-            break;
-        case 'arrowleft':
-            e.preventDefault();
-            goBack();
-            break;
-        case 'i':
-            window.location.reload();
-            break;
+        case 'arrowdown': moveFocus(1); e.preventDefault(); break;
+        case 'arrowup': moveFocus(-1); e.preventDefault(); break;
+        case 'home': moveFocus(-Infinity); e.preventDefault(); break;
+        case 'end': moveFocus(Infinity); e.preventDefault(); break;
+        case 'arrowleft': goBack(); e.preventDefault(); break;
+        case 'i': window.location.reload(); break;
     }
 });
 
 // ============================================================================
-// INITIALIZATION
+// INIT
 // ============================================================================
 
 renderFolder(basePath);
