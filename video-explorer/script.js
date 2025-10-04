@@ -8,6 +8,7 @@ const basePath = pathSegments.join('/') + '/';
 let currentPath = basePath;
 const cache_suffix = '?cache';
 const focusStack = [];
+const ioCallbacks = new Map();
 
 const container = document.getElementById('container');
 const elsel_str = '.grid > button, .subfolders > button';
@@ -31,21 +32,31 @@ function getText(path) {
     .then(r => r.text()).catch(() => '');
 }
 
-function attachObserver(el, callback) {
-    const obs = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) {
-            obs.unobserve(entry.target);
-            callback(entry.target);
-        }
-    }, { rootMargin: '200px' });
-    obs.observe(el);
-}
-
 function createDiv(className, props) {
     const d = document.createElement('div');
     d.className = className;
     if (props) Object.assign(d, props);
     return d;
+}
+
+// ============================================================================
+// INSTERSECTION OBSERVER (lazy loading)
+// ============================================================================
+
+const globalObserver = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+        if (entry.isIntersecting) {
+            const cb = ioCallbacks.get(entry.target);
+            cb(entry.target);                   // always exists
+            ioCallbacks.delete(entry.target);   // cleanup
+            globalObserver.unobserve(entry.target);
+        }
+    }
+}, { rootMargin: '200px' });
+
+function attachObserver(el, callback) {
+    ioCallbacks.set(el, callback);
+    globalObserver.observe(el);
 }
 
 // ============================================================================
@@ -254,8 +265,8 @@ async function renderFolder(folderPath, focusBackName) {
     }
     appendGrid(container, items.filter(i => i.type === 'video'), thumbsList);
     const subs = items
-        .filter(i => i.type === 'directory' && i.name !== '.thumbnails' && i.name !== '.info')
-        .sort((a, b) => a.name.localeCompare(b.name));
+    .filter(i => i.type === 'directory' && i.name !== '.thumbnails' && i.name !== '.info')
+    .sort((a, b) => a.name.localeCompare(b.name));
 
     if (subs.length > 0) {
         let infoItems = [];
