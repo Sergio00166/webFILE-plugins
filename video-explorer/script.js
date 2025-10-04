@@ -1,12 +1,13 @@
 /* Code by Sergio00166 */
 
-const { pathname } = window.location;
+const {pathname} = window.location;
 const pathSegments = pathname.split('/');
 if (!pathSegments.pop().includes('.')) pathSegments.push('');
 const basePath = pathSegments.join('/') + '/';
 
 let currentPath = basePath;
 const cache_suffix = '?cache';
+const focusStack = [];
 
 const container = document.getElementById('container');
 const elsel_str = '.grid > button, .subfolders > button';
@@ -31,13 +32,10 @@ function getText(path) {
 }
 
 function attachObserver(el, callback) {
-    const obs = new IntersectionObserver(entries => {
-        for(let i=0;i<entries.length;i++) {
-            const e = entries[i];
-            if(e.isIntersecting) {
-                obs.unobserve(e.target);
-                callback(e.target);
-            }
+    const obs = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+            obs.unobserve(entry.target);
+            callback(entry.target);
         }
     }, { rootMargin: '200px' });
     obs.observe(el);
@@ -46,7 +44,7 @@ function attachObserver(el, callback) {
 function createDiv(className, props) {
     const d = document.createElement('div');
     d.className = className;
-    if(props) Object.assign(d, props);
+    if (props) Object.assign(d, props);
     return d;
 }
 
@@ -58,7 +56,7 @@ function createDescription(photos, descObj) {
     const desc = createDiv('description');
     const inner = createDiv('desc-inner');
 
-    if(photos && photos.length) {
+    if (photos && photos.length) {
         const pc = createDiv('poster-container');
         const pbg = createDiv('poster-bg');
         pbg.classList.add('loading');
@@ -68,10 +66,10 @@ function createDescription(photos, descObj) {
         pc.appendChild(pimg);
         inner.appendChild(pc);
     }
-    if(descObj) {
+    if (descObj) {
         const td = createDiv('desc-text');
-        td.style.visibility='hidden';
-        td.style.opacity='0';
+        td.style.visibility = 'hidden';
+        td.style.opacity = '0';
         inner.appendChild(td);
     }
     desc.appendChild(inner);
@@ -83,23 +81,21 @@ async function loadFolderPoster(el, photos, descObj) {
     const pbg = pc && pc.querySelector('.poster-bg');
     const pimg = pc && pc.querySelector('.poster-image');
 
-    if(photos && photos.length && pc && pbg && pimg) {
+    if (photos && photos.length && pc && pbg && pimg) {
         const bimg = new Image();
         bimg.src = photos[0].path + cache_suffix;
         pimg.src = photos[0].path + cache_suffix;
-        try {
-            await Promise.all([loadImage(bimg), loadImage(pimg)]);
-            pbg.appendChild(bimg);
-            pimg.classList.add('loaded');
-            pbg.classList.remove('loading');
-        } catch {}
+        await Promise.all([loadImage(bimg), loadImage(pimg)]);
+        pbg.appendChild(bimg);
+        pimg.classList.add('loaded');
+        pbg.classList.remove('loading');
     }
-    if(descObj) {
+    if (descObj) {
         const td = el.querySelector('.desc-text');
         const t = await getText(descObj.path);
-        td.textContent=t;
-        td.style.visibility='';
-        td.style.opacity='';
+        td.textContent = t;
+        td.style.visibility = '';
+        td.style.opacity = '';
     }
 }
 
@@ -108,13 +104,14 @@ async function loadFolderPoster(el, photos, descObj) {
 // ============================================================================
 
 function getFolderInfoFromList(folderName, infoItems) {
-    let poster=null, descObj=null;
-    for(let i=0;i<infoItems.length;i++) {
-        const it=infoItems[i];
-        if(!poster && it.type==='photo' && it.name.indexOf(folderName+'.')===0) poster=it;
-        if(!descObj && it.type==='text' && it.name===folderName+'.txt') descObj=it;
+    let poster = null,
+    descObj = null;
+    for (let i = 0; i < infoItems.length; i++) {
+        const it = infoItems[i];
+        if (!poster && it.type === 'photo' && it.name.indexOf(folderName + '.') === 0) poster = it;
+        if (!descObj && it.type === 'text' && it.name === folderName + '.txt') descObj = it;
     }
-    return { poster, descObj };
+    return {poster, descObj};
 }
 
 // ============================================================================
@@ -122,56 +119,54 @@ function getFolderInfoFromList(folderName, infoItems) {
 // ============================================================================
 
 function findThumbnailForVideo(videoName, thumbsList) {
-    const baseName = videoName.replace(/\.[^/.]+$/,'');
-    for(let i=0;i<thumbsList.length;i++) {
-        const it=thumbsList[i];
-        const thumbBase = it.name.replace(/\.[^/.]+$/,'');
-        if(thumbBase === baseName) return it;
+    const baseName = videoName.replace(/\.[^/.]+$/, '');
+    for (let i = 0; i < thumbsList.length; i++) {
+        const it = thumbsList[i];
+        const thumbBase = it.name.replace(/\.[^/.]+$/, '');
+        if (thumbBase === baseName) return it;
     }
     return null;
 }
 
 async function loadThumbnail(el, thumbItem) {
     el.classList.add('loading');
-    try {
-        if(!thumbItem) return;
-        const img=new Image();
-        img.src=thumbItem.path+cache_suffix;
-        el.appendChild(img);
-        await loadImage(img);
-        el.classList.remove('loading');
-    } catch {}
+    if (!thumbItem) return;
+    const img = new Image();
+    img.src = thumbItem.path + cache_suffix;
+    el.appendChild(img);
+    await loadImage(img);
+    el.classList.remove('loading');
 }
 
 // ============================================================================
 // GRID
 // ============================================================================
 
-function appendGrid(parent,videos,thumbsList) {
-    if(!videos || !videos.length) return;
-    const grid=createDiv('grid');
+function appendGrid(parent, videos, thumbsList) {
+    if (!videos || !videos.length) return;
+    const grid = createDiv('grid');
     parent.appendChild(grid);
-    let frag=null;
+    let frag = null;
 
-    for(let i=0;i<videos.length;i++) {
-        if(i%8===0) frag=document.createDocumentFragment();
-        const v=videos[i];
-        const card=document.createElement('button');
-        const thumb=createDiv('thumb');
+    for (let i = 0; i < videos.length; i++) {
+        if (i % 8 === 0) frag = document.createDocumentFragment();
+        const v = videos[i];
+        const card = document.createElement('button');
+        const thumb = createDiv('thumb');
         const thumbItem = findThumbnailForVideo(v.name, thumbsList);
         attachObserver(thumb, el => {
             loadThumbnail(el, thumbItem);
         });
-        const info=createDiv('info');
-        const title=createDiv('title');
-        title.textContent=v.name;
+        const info = createDiv('info');
+        const title = createDiv('title');
+        title.textContent = v.name;
 
         info.appendChild(title);
         card.appendChild(thumb);
         card.appendChild(info);
         frag.appendChild(card);
 
-        if(i%8===7 || i===videos.length-1) {
+        if (i % 8 === 7 || i === videos.length - 1) {
             grid.appendChild(frag);
         }
     }
@@ -182,19 +177,19 @@ function appendGrid(parent,videos,thumbsList) {
 // ============================================================================
 
 function renderFolderContent(folderName, containerElement, infoItems) {
-    const info=createDiv('info');
-    const title=createDiv('title');
-    title.textContent=folderName;
+    const info = createDiv('info');
+    const title = createDiv('title');
+    title.textContent = folderName;
     info.appendChild(title);
     containerElement.appendChild(info);
 
-    if(!infoItems || !infoItems.length) return;
+    if (!infoItems || !infoItems.length) return;
     const res = getFolderInfoFromList(folderName, infoItems);
     const photos = [];
-    if(res.poster) photos.push(res.poster);
+    if (res.poster) photos.push(res.poster);
 
-    if(!photos.length && !res.descObj) return;
-    const descEl=createDescription(photos, res.descObj);
+    if (!photos.length && !res.descObj) return;
+    const descEl = createDescription(photos, res.descObj);
     containerElement.appendChild(descEl);
 
     attachObserver(descEl, el => {
@@ -207,9 +202,9 @@ function renderFolderContent(folderName, containerElement, infoItems) {
 // ============================================================================
 
 function renderSubfolder(subfolders, containerElement, focusBackName, infoItems) {
-    subfolders.forEach(sub=>{
-        const el=document.createElement('button');
-        if(sub.name===focusBackName) el.dataset.focusMe='1';
+    subfolders.forEach(sub => {
+        const el = document.createElement('button');
+        if (sub.name === focusBackName) el.dataset.focusMe = '1';
         containerElement.appendChild(el);
         renderFolderContent(sub.name, el, infoItems);
         el.classList.add('loaded');
@@ -258,10 +253,9 @@ async function renderFolder(folderPath, focusBackName) {
         thumbsList = await getJSON(folderPath + '.thumbnails/');
     }
     appendGrid(container, items.filter(i => i.type === 'video'), thumbsList);
-
     const subs = items
-    .filter(i => i.type === 'directory' && i.name !== '.thumbnails' && i.name !== '.info')
-    .sort((a, b) => a.name.localeCompare(b.name));
+        .filter(i => i.type === 'directory' && i.name !== '.thumbnails' && i.name !== '.info')
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     if (subs.length > 0) {
         let infoItems = [];
@@ -270,7 +264,10 @@ async function renderFolder(folderPath, focusBackName) {
         renderSubfolder(subs, sc, focusBackName, infoItems);
         container.appendChild(sc);
     }
-    if (focusBackName) waitForElement('[data-focus-me="1"]').then(el => el.focus()).catch();
+    if (focusBackName) {
+        const el = container.querySelector('[data-focus-me="1"]');
+        if (el) el.focus();
+    }
 }
 
 // ============================================================================
@@ -285,6 +282,7 @@ function handleItemAction(el) {
     var encoded = encodeURIComponent(name);
 
     if (parent.classList.contains('subfolders')) {
+        focusStack.push(name);
         container.scrollTo(0, 0);
         var targetPath = currentPath + encoded + '/';
         renderFolder(targetPath);
@@ -297,35 +295,34 @@ function handleItemAction(el) {
 }
 
 function goBack() {
-    const cur=currentPath.split('/').filter(Boolean);
-    const base=basePath.split('/').filter(Boolean);
-    if(cur.length<=base.length && currentPath.indexOf(basePath)===0) {
-        const exitPath='/' + base.slice(0,-1).join('/');
-        if(exitPath==='') window.location.href='/';
-        else window.location.href=exitPath;
+    const cur = currentPath.split('/').filter(Boolean);
+    const base = basePath.split('/').filter(Boolean);
+
+    if (cur.length <= base.length && currentPath.indexOf(basePath) === 0) {
+        const exitPath = '/' + base.slice(0, -1).join('/');
+        if (exitPath === '') window.location.href = '/';
+        else window.location.href = exitPath;
         return;
     }
-    let parent='/' + cur.slice(0,-1).join('/');
-    if(!parent.endsWith('/')) parent+='/';
-    renderFolder(parent, cur[cur.length-1]);
-}
+    let parent = '/' + cur.slice(0, -1).join('/');
+    if (!parent.endsWith('/')) parent += '/';
 
-async function waitForElement(selector) {
-    for(let i=0;i<20;i++) {
-        const el=document.querySelector(selector);
-        if(el) return el;
-        await new Promise(r=>setTimeout(r,25));
-    }
-    throw new Error('Element not found: '+selector);
+    const focusBackName = focusStack.pop() || null;
+    renderFolder(parent, focusBackName);
 }
 
 function moveFocus(direction) {
-    const focusable=Array.from(document.querySelectorAll(elsel_str));
-    if(!focusable.length) return;
-    let idx=focusable.indexOf(document.activeElement);
-    if(direction===-Infinity) idx=0;
-    else if(direction===Infinity) idx=focusable.length-1;
-    else idx=(idx+direction+focusable.length)%focusable.length;
+    const focusable = Array.from(document.querySelectorAll(elsel_str));
+    if (!focusable.length) return;
+    let idx = focusable.indexOf(document.activeElement);
+
+    if (direction === -Infinity) {
+        idx = 0;
+    } else if (direction === Infinity) {
+        idx = focusable.length - 1;
+    } else {
+        idx = (idx + direction + focusable.length) % focusable.length;
+    }
     focusable[idx].focus();
 }
 
@@ -334,28 +331,40 @@ function moveFocus(direction) {
 // ============================================================================
 
 container.addEventListener('click', e => {
-    const clicked=e.target.closest(elsel_str);
+    const clicked = e.target.closest(elsel_str);
     e.stopPropagation();
-    if(clicked) handleItemAction(clicked);
+    if (clicked) handleItemAction(clicked);
 });
 
 container.addEventListener('keydown', e => {
-    const focused=e.target.closest(elsel_str);
-    if(focused && ['Enter',' ','ArrowRight'].indexOf(e.key)!==-1) {
+    const focused = e.target.closest(elsel_str);
+    if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(e.key) !== -1) {
         e.preventDefault();
         handleItemAction(focused);
     }
 });
 
 document.addEventListener('keydown', e => {
-    if(e.ctrlKey||e.metaKey||e.altKey||e.shiftKey) return;
-    const key=e.key.toLowerCase();
-    if(key==='arrowdown') { moveFocus(1); e.preventDefault(); }
-    else if(key==='arrowup') { moveFocus(-1); e.preventDefault(); }
-    else if(key==='home') { moveFocus(-Infinity); e.preventDefault(); }
-    else if(key==='end') { moveFocus(Infinity); e.preventDefault(); }
-    else if(key==='arrowleft') { goBack(); e.preventDefault(); }
-    else if(key==='i') { window.location.reload(); }
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+    const key = e.key.toLowerCase();
+    if (key === 'arrowdown') {
+        moveFocus(1);
+        e.preventDefault();
+    } else if (key === 'arrowup') {
+        moveFocus(-1);
+        e.preventDefault();
+    } else if (key === 'home') {
+        moveFocus(-Infinity);
+        e.preventDefault();
+    } else if (key === 'end') {
+        moveFocus(Infinity);
+        e.preventDefault();
+    } else if (key === 'arrowleft') {
+        goBack();
+        e.preventDefault();
+    } else if (key === 'i') {
+        window.location.reload();
+    }
 });
 
 // ============================================================================
@@ -364,3 +373,4 @@ document.addEventListener('keydown', e => {
 
 renderFolder(basePath);
 
+ 
