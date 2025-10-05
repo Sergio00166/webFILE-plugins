@@ -29,22 +29,30 @@ Make sure each target folder contains the following:
 
 ## ✨ Key Features
 
-- 📽 **Video Auto-Detection** — Finds supported video formats in the folder  
-- 🖼 **Thumbnails** — Loads preview images from `.thumbnails/` directory  
-- 📝 **Folder Descriptions** — Pulls optional text from `description.txt`  
-- 🎬 **Poster Image Display** — Uses `poster.jpg` as the folder’s cover banner
+- 📽 **Video Auto-Detection** — Automatically detects supported video formats within each folder  
+- 🖼 **Thumbnails** — Loads preview images from the `.thumbnails/` directory alongside the videos  
+- 📝 **Folder Descriptions**  
+  - **Prelook (from parent view):** Reads description text from `.info/<folder>.txt`  
+  - **Inside the folder:** Reads `description.txt` located directly inside the folder  
+- 🎬 **Poster Image Display**  
+  - **Prelook (from parent view):** Uses `.info/<folder>.png` as the folder’s preview poster  
+  - **Inside the folder:** Uses `poster.jpg` located inside the folder as its banner  
 
 ---
 
 ## 🧱 Recommended Folder Structure
 
 ```plaintext
+.info/
+├── folder.txt             # Description for folder
+├── folder.png             # Poster for folder
 folder/
 ├── .thumbnails/           # Contains video thumbnail previews
 │   └── 1.webp             # Thumbnail for '1.mkv'
 ├── 1.mkv                  # Video file
-├── description.txt        # Optional: Description shown in UI
-├── poster.jpg             # Optional: Folder-wide poster image
-├── styles.css             # Plugin styling
-├── script.js              # Plugin logic
-└── index.web              # Main interface file
+├── description.txt        # Description for inside the folder
+├── poster.jpg             # Poster for inside the folder
+├── styles.css             # Styles
+├── script.js              # Core
+└── index.web              # Loader
+```
