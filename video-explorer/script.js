@@ -7,8 +7,8 @@ const basePath = pathSegments.join('/') + '/';
 
 let currentPath = basePath;
 const cache_suffix = '?cache';
-const focusStack = [];
 const ioCallbacks = new Map();
+const focusStack = [];
 
 const container = document.getElementById('container');
 const elsel_str = '.grid > button, .subfolders > button';
@@ -47,8 +47,8 @@ const globalObserver = new IntersectionObserver(entries => {
     for (const entry of entries) {
         if (entry.isIntersecting) {
             const cb = ioCallbacks.get(entry.target);
-            cb(entry.target);                   // always exists
-            ioCallbacks.delete(entry.target);   // cleanup
+            cb(entry.target);
+            ioCallbacks.delete(entry.target);
             globalObserver.unobserve(entry.target);
         }
     }
@@ -65,48 +65,42 @@ function attachObserver(el, callback) {
 
 function createDescription(photos, descObj) {
     const desc = createDiv('description');
-    const inner = createDiv('desc-inner');
 
     if (photos && photos.length) {
         const pc = createDiv('poster-container');
-        const pbg = createDiv('poster-bg');
+        const pbg = createDiv('poster-background');
         pbg.classList.add('loading');
         const pimg = document.createElement('img');
         pimg.className = 'poster-image';
         pc.appendChild(pbg);
         pc.appendChild(pimg);
-        inner.appendChild(pc);
+        desc.appendChild(pc);
     }
     if (descObj) {
         const td = createDiv('desc-text');
-        td.style.visibility = 'hidden';
-        td.style.opacity = '0';
-        inner.appendChild(td);
+        desc.appendChild(td);
     }
-    desc.appendChild(inner);
     return desc;
 }
 
 async function loadFolderPoster(el, photos, descObj) {
     const pc = el.querySelector('.poster-container');
-    const pbg = pc && pc.querySelector('.poster-bg');
-    const pimg = pc && pc.querySelector('.poster-image');
+    const pbg = pc.querySelector('.poster-background');
+    const pimg = pc.querySelector('.poster-image');
 
-    if (photos && photos.length && pc && pbg && pimg) {
+    if (photos && photos.length) {
         const bimg = new Image();
         bimg.src = photos[0].path + cache_suffix;
         pimg.src = photos[0].path + cache_suffix;
         await Promise.all([loadImage(bimg), loadImage(pimg)]);
         pbg.appendChild(bimg);
-        pimg.classList.add('loaded');
         pbg.classList.remove('loading');
+        pimg.classList.add('loaded');
     }
     if (descObj) {
         const td = el.querySelector('.desc-text');
         const t = await getText(descObj.path);
         td.textContent = t;
-        td.style.visibility = '';
-        td.style.opacity = '';
     }
 }
 
@@ -168,13 +162,11 @@ function appendGrid(parent, videos, thumbsList) {
         attachObserver(thumb, el => {
             loadThumbnail(el, thumbItem);
         });
-        const info = createDiv('info');
         const title = createDiv('title');
         title.textContent = v.name;
 
-        info.appendChild(title);
         card.appendChild(thumb);
-        card.appendChild(info);
+        card.appendChild(title);
         frag.appendChild(card);
 
         if (i % 8 === 7 || i === videos.length - 1) {
@@ -188,11 +180,9 @@ function appendGrid(parent, videos, thumbsList) {
 // ============================================================================
 
 function renderFolderContent(folderName, containerElement, infoItems) {
-    const info = createDiv('info');
     const title = createDiv('title');
     title.textContent = folderName;
-    info.appendChild(title);
-    containerElement.appendChild(info);
+    containerElement.appendChild(title);
 
     if (!infoItems || !infoItems.length) return;
     const res = getFolderInfoFromList(folderName, infoItems);
@@ -218,7 +208,6 @@ function renderSubfolder(subfolders, containerElement, focusBackName, infoItems)
         if (sub.name === focusBackName) el.dataset.focusMe = '1';
         containerElement.appendChild(el);
         renderFolderContent(sub.name, el, infoItems);
-        el.classList.add('loaded');
     });
 }
 
@@ -265,8 +254,8 @@ async function renderFolder(folderPath, focusBackName) {
     }
     appendGrid(container, items.filter(i => i.type === 'video'), thumbsList);
     const subs = items
-    .filter(i => i.type === 'directory' && i.name !== '.thumbnails' && i.name !== '.info')
-    .sort((a, b) => a.name.localeCompare(b.name));
+        .filter(i => i.type === 'directory' && i.name !== '.thumbnails' && i.name !== '.info')
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     if (subs.length > 0) {
         let infoItems = [];

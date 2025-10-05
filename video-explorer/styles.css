@@ -1,6 +1,5 @@
 /* Code by Sergio00166 */
 
-
 :root {
     --gap: 1rem;
     --card-radius: 16px;
@@ -8,13 +7,8 @@
     --accent: #bb86fc;
     --bar-bg: #1f1f1f;
     --description-bg: #bb86fc1a;
-    --description_height: 200px;
+    --description_height: 250px;
 }
-
-/* -------------------------
- *  Base
- *  ------------------------- */
-
 body {
     margin: 0 ;
     width: 100%;
@@ -30,20 +24,10 @@ body {
     -webkit-user-select: none;
     user-select: none;
 }
-img {
-    pointer-events: none;
-}
-button {
-    color: inherit;
-    border: none;
-    font-size: inherit;
-}
-::-webkit-scrollbar-thumb {
-    background: #555;
-}
-::-webkit-scrollbar-track {
-    background: #1e1e1e;
-}
+img { pointer-events: none; }
+::-webkit-scrollbar-thumb { background: #555;  }
+::-webkit-scrollbar-track { background: #1e1e1e; }
+
 
 /* -------------------------
  *  Main structure
@@ -58,11 +42,21 @@ button {
     flex-direction: column;
     padding: 12px 16px 24px;
     box-sizing: border-box;
+    animation: fadeIn 0.5s;
 }
 .subfolders {
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+.grid {
+    display: grid;
+    gap: var(--gap);
+}
+button {
+    all: unset;
+    cursor: pointer;
+    animation: fadeIn 0.2s;
 }
 
 /* -------------------------
@@ -78,9 +72,6 @@ button {
     gap: 10px;
 }
 .path-bar button {
-    padding: 0;
-    background: none;
-    cursor: pointer;
     height: 20px;
     width: 20px;
 }
@@ -108,22 +99,29 @@ button {
 }
 
 /* -------------------------
- *  Video Grid
+ *  Main elements
  *  ------------------------- */
 
-.grid {
-    display: grid;
-    gap: var(--gap);
+.title {
+    padding: 8px;
+    text-align: center;
+    -webkit-user-select: text;
+    user-select: text;
+    word-break: break-word;
 }
 .grid > button {
     display: flex;
     overflow: hidden;
-    cursor: pointer;
     flex-direction: column;
     background: #1e1e1e;
     border-radius: var(--card-radius);
     transition: box-shadow 0.1s;
     box-shadow: var(--shadow);
+}
+.subfolders > button {
+    box-shadow: var(--shadow);
+    background: var(--bar-bg);
+    border-radius: var(--card-radius);
 }
 
 /* -------------------------
@@ -136,8 +134,6 @@ button {
     min-height: 120px;
     background: #000;
     position: relative;
-    border-top-left-radius: var(--card-radius);
-    border-top-right-radius: var(--card-radius);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -146,59 +142,8 @@ button {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    object-position: center;
     display: block;
     background: #000;
-}
-.thumb.loading,
-.poster-bg.loading {
-    animation: pulse 1.5s infinite;
-}
-.thumb.loading::before,
-.poster-bg.loading::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
-    background-size: 200% 100%;
-    animation: loadingAnim 1.5s infinite;
-}
-
-/* -------------------------
- *  Info / title
- *  ------------------------- */
-
-.info {
-    padding: 0.75rem;
-    text-align: center;
-    width: auto;
-    position: static;
-    background: none;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-}
-.title {
-    -webkit-user-select: text;
-    user-select: text;
-    word-break: break-word;
-}
-
-/* -------------------------
- *  Folder tiles
- *  ------------------------- */
-
-.subfolders > button {
-    opacity: 0;
-    min-height: 80px;
-    cursor: pointer;
-    box-shadow: var(--shadow);
-    background: var(--bar-bg);
-    border-radius: var(--card-radius);
-    transition: box-shadow 0.1s, opacity 0.2s;
-}
-.subfolders > button.loaded {
-    opacity: 1;
-    min-height: unset;
 }
 
 /* -------------------------
@@ -209,38 +154,25 @@ button {
     aspect-ratio: 1/1;
     position: relative;
     height: var(--description_height);
-    flex-shrink: 0;
     border-radius: var(--card-radius);
     overflow: hidden;
+    flex-shrink: 0;
 }
-.poster-bg {
-    position: absolute;
+.poster-background {
     inset: 0;
+    position: absolute;
 }
-.poster-bg img {
+.poster-background img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
     filter: blur(2px);
     display: block;
-}
-.poster-bg.loading {
-    animation: pulse 1.5s infinite;
-}
-.poster-bg.loading::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
-    background-size: 200% 100%;
-    animation: loadingAnim 1.5s infinite;
 }
 .poster-image {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    object-position: center;
     display: none;
     position: relative;
     z-index: 2;
@@ -254,22 +186,17 @@ button {
  *  ------------------------- */
 
 .description {
-    padding: 1rem;
-    font-size: 1rem;
+    gap: 36px;
+    padding: 8px;
     background: var(--description-bg);
     border: 1px solid var(--accent);
     border-radius: var(--card-radius);
-    box-sizing: border-box;
-}
-.desc-inner {
     display: flex;
-    gap: var(--gap);
     align-items: center;
 }
 .desc-text {
     width: 100%;
     overflow: auto;
-    margin-left: 16px;
     display: block;
     text-align: left;
     align-content: center;
@@ -285,14 +212,24 @@ button {
  *  Keyframes / animations
  *  ------------------------- */
 
-@keyframes pulse {
-    0%,
-    100% { background-color: #333; }
-    50% { background-color: #444; }
-}
 @keyframes loadingAnim {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1;}
+}
+
+.poster-background.loading,
+.thumb.loading::before,
+.poster-background.loading::before {
+    inset: 0;
+    content: "";
+    position: absolute;
+    background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+    background-size: 200% 100%;
+    animation: loadingAnim 1.5s infinite;
 }
 
 /* -------------------------
@@ -326,21 +263,12 @@ button {
  *  ------------------------- */
 
 @media (max-width: 720px) {
-    .desc-inner { flex-direction: column; }
-    .desc-text { margin-left: 0; }
+    .description { 
+        gap: 8px;
+        flex-direction: column;
+    }
     .poster-container {
         width: 100%;
-        max-width: 100%;
-        height: auto;
-        max-height: 125px;
-        aspect-ratio: 16/9;
-    }
-}
-@media (max-width: 400px) {
-    body { font-size: 0.8rem; }
-    .info, .description {
-        padding: 0.5rem;
-        font-size: 0.75rem;
     }
 }
 /* Hide everything if display too small */
