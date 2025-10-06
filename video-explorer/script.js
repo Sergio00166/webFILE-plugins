@@ -333,7 +333,7 @@ container.addEventListener('click', event => {
 
 container.addEventListener('keydown', event => {
     const focused = event.target.closest(elsel_str);
-    if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(e.key) !== -1) {
+    if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(event.key) !== -1) {
         event.preventDefault();
         handleItemAction(focused);
     }
