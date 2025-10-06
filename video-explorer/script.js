@@ -192,7 +192,7 @@ function renderFolderContent(folderName, containerElement, infoItems) {
     const descEl = createDescription(photos, res.descObj);
     containerElement.appendChild(descEl);
 
-    attachObserver(descEl, el => loadFolderPoster(el, photos, res.descObj).catch());
+    attachObserver(descEl, el => loadFolderPoster(el, photos, res.descObj));
 }
 
 // ============================================================================
