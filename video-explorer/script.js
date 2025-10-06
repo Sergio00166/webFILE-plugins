@@ -158,13 +158,12 @@ function appendGrid(parent, videos, thumbsList) {
         const v = videos[i];
         const card = document.createElement('button');
         const thumb = createDiv('thumb');
+
         const thumbItem = findThumbnailForVideo(v.name, thumbsList);
-        attachObserver(thumb, el => {
-            loadThumbnail(el, thumbItem);
-        });
+        attachObserver(thumb, el => loadThumbnail(el, thumbItem));
+
         const title = createDiv('title');
         title.textContent = v.name;
-
         card.appendChild(thumb);
         card.appendChild(title);
         frag.appendChild(card);
@@ -193,9 +192,7 @@ function renderFolderContent(folderName, containerElement, infoItems) {
     const descEl = createDescription(photos, res.descObj);
     containerElement.appendChild(descEl);
 
-    attachObserver(descEl, el => {
-        loadFolderPoster(el, photos, res.descObj).catch();
-    });
+    attachObserver(descEl, el => loadFolderPoster(el, photos, res.descObj).catch());
 }
 
 // ============================================================================
@@ -205,9 +202,11 @@ function renderFolderContent(folderName, containerElement, infoItems) {
 function renderSubfolder(subfolders, containerElement, focusBackName, infoItems) {
     subfolders.forEach(sub => {
         const el = document.createElement('button');
-        if (sub.name === focusBackName) el.dataset.focusMe = '1';
         containerElement.appendChild(el);
         renderFolderContent(sub.name, el, infoItems);
+        if (sub.name === focusBackName) {
+            requestAnimationFrame(() => el.focus());
+        }
     });
 }
 
@@ -263,10 +262,6 @@ async function renderFolder(folderPath, focusBackName) {
         const sc = createDiv('subfolders');
         renderSubfolder(subs, sc, focusBackName, infoItems);
         container.appendChild(sc);
-    }
-    if (focusBackName) {
-        const el = container.querySelector('[data-focus-me="1"]');
-        if (el) el.focus();
     }
 }
 
