@@ -325,38 +325,38 @@ function moveFocus(direction) {
 // EVENTS
 // ============================================================================
 
-container.addEventListener('click', e => {
-    const clicked = e.target.closest(elsel_str);
-    e.stopPropagation();
+container.addEventListener('click', event => {
+    const clicked = event.target.closest(elsel_str);
+    event.stopPropagation();
     if (clicked) handleItemAction(clicked);
 });
 
-container.addEventListener('keydown', e => {
-    const focused = e.target.closest(elsel_str);
+container.addEventListener('keydown', event => {
+    const focused = event.target.closest(elsel_str);
     if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(e.key) !== -1) {
-        e.preventDefault();
+        event.preventDefault();
         handleItemAction(focused);
     }
 });
 
-document.addEventListener('keydown', e => {
-    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-    const key = e.key.toLowerCase();
+document.addEventListener('keydown', event => {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    const key = event.key.toLowerCase();
     if (key === 'arrowdown') {
         moveFocus(1);
-        e.preventDefault();
+        event.preventDefault();
     } else if (key === 'arrowup') {
         moveFocus(-1);
-        e.preventDefault();
+        event.preventDefault();
     } else if (key === 'home') {
         moveFocus(-Infinity);
-        e.preventDefault();
+        event.preventDefault();
     } else if (key === 'end') {
         moveFocus(Infinity);
-        e.preventDefault();
+        event.preventDefault();
     } else if (key === 'arrowleft') {
         goBack();
-        e.preventDefault();
+        event.preventDefault();
     } else if (key === 'i') {
         window.location.reload();
     }
