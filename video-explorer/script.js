@@ -158,13 +158,12 @@ function appendGrid(parent, videos, thumbsList) {
         const v = videos[i];
         const card = document.createElement('button');
         const thumb = createDiv('thumb');
+
         const thumbItem = findThumbnailForVideo(v.name, thumbsList);
-        attachObserver(thumb, el => {
-            loadThumbnail(el, thumbItem);
-        });
+        attachObserver(thumb, el => loadThumbnail(el, thumbItem));
+
         const title = createDiv('title');
         title.textContent = v.name;
-
         card.appendChild(thumb);
         card.appendChild(title);
         frag.appendChild(card);
@@ -193,9 +192,7 @@ function renderFolderContent(folderName, containerElement, infoItems) {
     const descEl = createDescription(photos, res.descObj);
     containerElement.appendChild(descEl);
 
-    attachObserver(descEl, el => {
-        loadFolderPoster(el, photos, res.descObj).catch();
-    });
+    attachObserver(descEl, el => loadFolderPoster(el, photos, res.descObj));
 }
 
 // ============================================================================
@@ -205,9 +202,12 @@ function renderFolderContent(folderName, containerElement, infoItems) {
 function renderSubfolder(subfolders, containerElement, focusBackName, infoItems) {
     subfolders.forEach(sub => {
         const el = document.createElement('button');
-        if (sub.name === focusBackName) el.dataset.focusMe = '1';
         containerElement.appendChild(el);
         renderFolderContent(sub.name, el, infoItems);
+        if (sub.name === focusBackName) {
+            requestAnimationFrame(() => el.focus());
+            el.id = "focused";
+        }
     });
 }
 
@@ -264,10 +264,6 @@ async function renderFolder(folderPath, focusBackName) {
         renderSubfolder(subs, sc, focusBackName, infoItems);
         container.appendChild(sc);
     }
-    if (focusBackName) {
-        const el = container.querySelector('[data-focus-me="1"]');
-        if (el) el.focus();
-    }
 }
 
 // ============================================================================
@@ -275,21 +271,21 @@ async function renderFolder(folderPath, focusBackName) {
 // ============================================================================
 
 function handleItemAction(el) {
-    var parent = el.parentElement;
-    var nameEl = el.querySelector('.title');
-    var name = '';
+    let parent = el.parentElement;
+    let nameEl = el.querySelector('.title');
+    let name = '';
     if (nameEl) name = nameEl.textContent;
-    var encoded = encodeURIComponent(name);
+    let encoded = encodeURIComponent(name);
 
     if (parent.classList.contains('subfolders')) {
         focusStack.push(name);
         container.scrollTo(0, 0);
-        var targetPath = currentPath + encoded + '/';
+        let targetPath = currentPath + encoded + '/';
         renderFolder(targetPath);
         return;
     }
     if (parent.classList.contains('grid')) {
-        var targetPath2 = currentPath + encoded;
+        let targetPath2 = currentPath + encoded;
         window.open(targetPath2, '_blank');
     }
 }
@@ -330,40 +326,65 @@ function moveFocus(direction) {
 // EVENTS
 // ============================================================================
 
-container.addEventListener('click', e => {
-    const clicked = e.target.closest(elsel_str);
-    e.stopPropagation();
+container.addEventListener('click', event => {
+    const clicked = event.target.closest(elsel_str);
+    event.stopPropagation();
     if (clicked) handleItemAction(clicked);
 });
 
-container.addEventListener('keydown', e => {
-    const focused = e.target.closest(elsel_str);
-    if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(e.key) !== -1) {
-        e.preventDefault();
+container.addEventListener('keydown', event => {
+    const focused = event.target.closest(elsel_str);
+    if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(event.key) !== -1) {
+        event.preventDefault();
         handleItemAction(focused);
     }
 });
 
-document.addEventListener('keydown', e => {
-    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-    const key = e.key.toLowerCase();
-    if (key === 'arrowdown') {
-        moveFocus(1);
-        e.preventDefault();
-    } else if (key === 'arrowup') {
-        moveFocus(-1);
-        e.preventDefault();
-    } else if (key === 'home') {
-        moveFocus(-Infinity);
-        e.preventDefault();
-    } else if (key === 'end') {
-        moveFocus(Infinity);
-        e.preventDefault();
-    } else if (key === 'arrowleft') {
-        goBack();
-        e.preventDefault();
-    } else if (key === 'i') {
-        window.location.reload();
+document.addEventListener('mouseup', event => {
+    switch (event.button) {
+        case 3:
+            event.preventDefault();
+            goBack();
+            break;
+        case 4:
+            event.preventDefault();
+            const el = document.getElementById('focused');
+            if (el) handleItemAction(el);
+            break;
+        default:
+            break;
+    }
+});
+
+document.addEventListener('keydown', event => {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+
+    switch (event.key.toLowerCase()) {
+        case 'arrowdown':
+            event.preventDefault();
+            moveFocus(1);
+            break;
+        case 'arrowup':
+            event.preventDefault();
+            moveFocus(-1);
+            break;
+        case 'home':
+            event.preventDefault();
+            moveFocus(-Infinity);
+            break;
+        case 'end':
+            event.preventDefault();
+            moveFocus(Infinity);
+            break;
+        case 'arrowleft':
+            event.preventDefault();
+            goBack();
+            break;
+        case 'i':
+            window.location.reload();
+            break;
+        default:
+            break;
     }
 });
 

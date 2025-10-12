@@ -44,6 +44,9 @@ img { pointer-events: none; }
     box-sizing: border-box;
     animation: fadeIn 0.5s;
 }
+#container > div {
+    animation: fadeIn 0.2s;
+}
 .subfolders {
     display: flex;
     flex-direction: column;
@@ -54,9 +57,12 @@ img { pointer-events: none; }
     gap: var(--gap);
 }
 button {
-    all: unset;
-    cursor: pointer;
-    animation: fadeIn 0.2s;
+    padding: 0;
+    color: inherit;
+    border: none;
+    font-size: inherit;
+    font-family: inherit;
+    background: none;
 }
 
 /* -------------------------
@@ -72,6 +78,7 @@ button {
     gap: 10px;
 }
 .path-bar button {
+    cursor: pointer;
     height: 20px;
     width: 20px;
 }
