@@ -78,6 +78,7 @@ button {
     gap: 10px;
 }
 .path-bar button {
+    cursor: pointer;
     height: 20px;
     width: 20px;
 }
