@@ -206,6 +206,7 @@ function renderSubfolder(subfolders, containerElement, focusBackName, infoItems)
         renderFolderContent(sub.name, el, infoItems);
         if (sub.name === focusBackName) {
             requestAnimationFrame(() => el.focus());
+            el.id = "focused";
         }
     });
 }
@@ -270,21 +271,21 @@ async function renderFolder(folderPath, focusBackName) {
 // ============================================================================
 
 function handleItemAction(el) {
-    var parent = el.parentElement;
-    var nameEl = el.querySelector('.title');
-    var name = '';
+    let parent = el.parentElement;
+    let nameEl = el.querySelector('.title');
+    let name = '';
     if (nameEl) name = nameEl.textContent;
-    var encoded = encodeURIComponent(name);
+    let encoded = encodeURIComponent(name);
 
     if (parent.classList.contains('subfolders')) {
         focusStack.push(name);
         container.scrollTo(0, 0);
-        var targetPath = currentPath + encoded + '/';
+        let targetPath = currentPath + encoded + '/';
         renderFolder(targetPath);
         return;
     }
     if (parent.classList.contains('grid')) {
-        var targetPath2 = currentPath + encoded;
+        let targetPath2 = currentPath + encoded;
         window.open(targetPath2, '_blank');
     }
 }
@@ -339,26 +340,51 @@ container.addEventListener('keydown', event => {
     }
 });
 
+document.addEventListener('mouseup', event => {
+    switch (event.button) {
+        case 3:
+            event.preventDefault();
+            goBack();
+            break;
+        case 4:
+            event.preventDefault();
+            const el = document.getElementById('focused');
+            if (el) handleItemAction(el);
+            break;
+        default:
+            break;
+    }
+});
+
 document.addEventListener('keydown', event => {
     if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
-    const key = event.key.toLowerCase();
-    if (key === 'arrowdown') {
-        moveFocus(1);
-        event.preventDefault();
-    } else if (key === 'arrowup') {
-        moveFocus(-1);
-        event.preventDefault();
-    } else if (key === 'home') {
-        moveFocus(-Infinity);
-        event.preventDefault();
-    } else if (key === 'end') {
-        moveFocus(Infinity);
-        event.preventDefault();
-    } else if (key === 'arrowleft') {
-        goBack();
-        event.preventDefault();
-    } else if (key === 'i') {
-        window.location.reload();
+
+    switch (event.key.toLowerCase()) {
+        case 'arrowdown':
+            event.preventDefault();
+            moveFocus(1);
+            break;
+        case 'arrowup':
+            event.preventDefault();
+            moveFocus(-1);
+            break;
+        case 'home':
+            event.preventDefault();
+            moveFocus(-Infinity);
+            break;
+        case 'end':
+            event.preventDefault();
+            moveFocus(Infinity);
+            break;
+        case 'arrowleft':
+            event.preventDefault();
+            goBack();
+            break;
+        case 'i':
+            window.location.reload();
+            break;
+        default:
+            break;
     }
 });
 
