@@ -357,7 +357,7 @@ document.addEventListener('mouseup', event => {
 });
 
 document.addEventListener('keydown', event => {
-    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     switch (event.key.toLowerCase()) {
         case 'arrowdown':
@@ -380,7 +380,7 @@ document.addEventListener('keydown', event => {
             event.preventDefault();
             goBack();
             break;
-        case 'i':
+        case 'h':
             window.location.reload();
             break;
         default:
