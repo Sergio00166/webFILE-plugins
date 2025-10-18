@@ -119,7 +119,6 @@ button {
     flex-direction: column;
     background: #1e1e1e;
     border-radius: var(--card-radius);
-    transition: box-shadow 0.1s;
     box-shadow: var(--shadow);
 }
 .subfolders > button {
