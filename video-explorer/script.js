@@ -196,37 +196,14 @@ function renderFolderContent(folderName, containerElement, infoItems) {
 }
 
 // ============================================================================
-// SUBFOLDERS
+// FOLDER HELPERS
 // ============================================================================
 
-function renderSubfolder(subfolders, containerElement, focusBackName, infoItems) {
-    subfolders.forEach(sub => {
-        const el = document.createElement('button');
-        containerElement.appendChild(el);
-        renderFolderContent(sub.name, el, infoItems);
-        if (sub.name === focusBackName) {
-            requestAnimationFrame(() => el.focus());
-            el.id = "focused";
-        }
-    });
-}
-
-// ============================================================================
-// FOLDER RENDERER
-// ============================================================================
-
-async function renderFolder(folderPath, focusBackName) {
-    currentPath = folderPath;
-    container.innerHTML = '';
-    let curPoster = null;
-    let curDesc = null;
+function filterItems(items) {
+	let curDesc, curPoster;
     let hasDotInfo = false;
     let hasDotThumbnails = false;
-
-    const titleEl = document.querySelector('.path-title');
-    titleEl.textContent = decodeURIComponent(folderPath);
-    const items = await getJSON(folderPath);
-
+	
     for (const it of items) {
         if (!curPoster && it.type === 'photo' && it.name.startsWith('poster.')) {
             curPoster = it;
@@ -241,29 +218,64 @@ async function renderFolder(folderPath, focusBackName) {
         }
         if (curPoster && curDesc && hasDotInfo && hasDotThumbnails) break;
     }
-    if (curPoster || curDesc) {
+	addMainDescription(curPoster, curDesc);
+	return [hasDotInfo, hasDotThumbnails];
+}
+
+function addMainDescription(curPoster, curDesc) {
+	if (curPoster || curDesc) {
         const photos = [];
         if (curPoster) photos.push(curPoster);
         const descEl = createDescription(photos, curDesc);
         container.appendChild(descEl);
         attachObserver(descEl, el => loadFolderPoster(el, photos, curDesc));
     }
-    let thumbsList = [];
+}
+
+function renderSubfolder(subfolders, focusBackName, infoItems) {
+	const subContainer = createDiv('subfolders');
+    subfolders.forEach(sub => {
+        const el = document.createElement('button');
+        subContainer.appendChild(el);
+        renderFolderContent(sub.name, el, infoItems);
+        if (sub.name === focusBackName) el.id = "focused";
+    });
+	container.appendChild(subContainer);
+}
+
+// ============================================================================
+// FOLDER RENDERER
+// ============================================================================
+
+async function renderFolder(folderPath, focusBackName) {
+	container.classList.remove('show');
+	container.innerHTML = '';
+	currentPath = folderPath;
+
+    const titleEl = document.querySelector('.path-title');
+    titleEl.textContent = decodeURIComponent(folderPath);
+
+    const items = await getJSON(folderPath);
+	const [hasDotInfo, hasDotThumbnails] = filterItems(items);
+
+	let thumbsList = [];
     if (hasDotThumbnails) {
         thumbsList = await getJSON(folderPath + '.thumbnails/');
     }
     appendGrid(container, items.filter(i => i.type === 'video'), thumbsList);
-    const subs = items
+    const subfolders = items
         .filter(i => i.type === 'directory' && i.name !== '.thumbnails' && i.name !== '.info')
         .sort((a, b) => a.name.localeCompare(b.name));
 
-    if (subs.length > 0) {
+    if (subfolders.length > 0) {
         let infoItems = [];
         if (hasDotInfo) infoItems = await getJSON(folderPath + '.info/');
-        const sc = createDiv('subfolders');
-        renderSubfolder(subs, sc, focusBackName, infoItems);
-        container.appendChild(sc);
+		renderSubfolder(subfolders, focusBackName, infoItems);
     }
+	// Focus back and show the container
+	const focusEl = document.getElementById('focused');
+	if (focusEl) focusEl.focus();
+	container.classList.add('show');
 }
 
 // ============================================================================
@@ -271,9 +283,9 @@ async function renderFolder(folderPath, focusBackName) {
 // ============================================================================
 
 function handleItemAction(el) {
+	let name = '';
     let parent = el.parentElement;
     let nameEl = el.querySelector('.title');
-    let name = '';
     if (nameEl) name = nameEl.textContent;
     let encoded = encodeURIComponent(name);
 
@@ -357,7 +369,7 @@ document.addEventListener('mouseup', event => {
 });
 
 document.addEventListener('keydown', event => {
-    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     switch (event.key.toLowerCase()) {
         case 'arrowdown':
@@ -380,7 +392,7 @@ document.addEventListener('keydown', event => {
             event.preventDefault();
             goBack();
             break;
-        case 'i':
+        case 'h':
             window.location.reload();
             break;
         default:
