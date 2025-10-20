@@ -63,10 +63,10 @@ function attachObserver(el, callback) {
 // POSTER / DESCRIPTION
 // ============================================================================
 
-function createDescription(photos, descObj) {
+function createDescription(photos, description) {
     const desc = createDiv('description');
 
-    if (photos && photos.length) {
+    if (photos) {
         const pc = createDiv('poster-container');
         const pbg = createDiv('poster-background');
         pbg.classList.add('loading');
@@ -76,30 +76,30 @@ function createDescription(photos, descObj) {
         pc.appendChild(pimg);
         desc.appendChild(pc);
     }
-    if (descObj) {
+    if (description) {
         const td = createDiv('desc-text');
         desc.appendChild(td);
     }
     return desc;
 }
 
-async function loadFolderPoster(el, photos, descObj) {
+async function loadFolderPoster(el, poster, description) {
     const pc = el.querySelector('.poster-container');
     const pbg = pc.querySelector('.poster-background');
     const pimg = pc.querySelector('.poster-image');
 
-    if (photos && photos.length) {
+    if (poster) {
         const bimg = new Image();
-        bimg.src = photos[0].path + cache_suffix;
-        pimg.src = photos[0].path + cache_suffix;
+        bimg.src = poster + cache_suffix;
+        pimg.src = poster + cache_suffix;
         await Promise.all([loadImage(bimg), loadImage(pimg)]);
         pbg.appendChild(bimg);
         pbg.classList.remove('loading');
         pimg.classList.add('loaded');
     }
-    if (descObj) {
+    if (description) {
         const td = el.querySelector('.desc-text');
-        const t = await getText(descObj.path);
+        const t = await getText(description);
         td.textContent = t;
     }
 }
@@ -109,14 +109,13 @@ async function loadFolderPoster(el, photos, descObj) {
 // ============================================================================
 
 function getFolderInfoFromList(folderName, infoItems) {
-    let poster = null,
-    descObj = null;
+    let poster, description;
     for (let i = 0; i < infoItems.length; i++) {
         const it = infoItems[i];
-        if (!poster && it.type === 'photo' && it.name.indexOf(folderName + '.') === 0) poster = it;
-        if (!descObj && it.type === 'text' && it.name === folderName + '.txt') descObj = it;
+        if (!poster && it.type === 'photo' && it.name.indexOf(folderName + '.') === 0) poster = it.path;
+        if (!description && it.type === 'text' && it.name === folderName + '.txt') description = it.path;
     }
-    return {poster, descObj};
+    return [poster, description];
 }
 
 // ============================================================================
@@ -184,15 +183,13 @@ function renderFolderContent(folderName, containerElement, infoItems) {
     containerElement.appendChild(title);
 
     if (!infoItems || !infoItems.length) return;
-    const res = getFolderInfoFromList(folderName, infoItems);
-    const photos = [];
-    if (res.poster) photos.push(res.poster);
+    const [poster, description] = getFolderInfoFromList(folderName, infoItems);
 
-    if (!photos.length && !res.descObj) return;
-    const descEl = createDescription(photos, res.descObj);
+    if (!poster && !description) return;
+    const descEl = createDescription(poster, description);
     containerElement.appendChild(descEl);
 
-    attachObserver(descEl, el => loadFolderPoster(el, photos, res.descObj));
+    attachObserver(descEl, el => loadFolderPoster(el, poster, description));
 }
 
 // ============================================================================
@@ -206,9 +203,9 @@ function filterItems(items) {
 	
     for (const it of items) {
         if (!curPoster && it.type === 'photo' && it.name.startsWith('poster.')) {
-            curPoster = it;
+            curPoster = it.path;
         } else if (!curDesc && it.type === 'text' && it.name === 'description.txt') {
-            curDesc = it;
+            curDesc = it.path;
         } else if (it.type === 'directory') {
             if (!hasDotInfo && it.name === '.info') {
                 hasDotInfo = true;
@@ -224,11 +221,9 @@ function filterItems(items) {
 
 function addMainDescription(curPoster, curDesc) {
 	if (curPoster || curDesc) {
-        const photos = [];
-        if (curPoster) photos.push(curPoster);
-        const descEl = createDescription(photos, curDesc);
+        const descEl = createDescription(curPoster, curDesc);
         container.appendChild(descEl);
-        attachObserver(descEl, el => loadFolderPoster(el, photos, curDesc));
+        attachObserver(descEl, el => loadFolderPoster(el, curPoster, curDesc));
     }
 }
 
