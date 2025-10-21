@@ -52,7 +52,7 @@ const globalObserver = new IntersectionObserver(entries => {
             globalObserver.unobserve(entry.target);
         }
     }
-}, { rootMargin: '200px' });
+},{ rootMargin: '200px' });
 
 function attachObserver(el, callback) {
     ioCallbacks.set(el, callback);
@@ -248,13 +248,12 @@ function separateFolderItems(items) {
                 videos.push(it);
                 break;
             case 'directory':
-                if (it.name === '.info') {
+                if (it.name === '.info')
                     hasDotInfo = true;
-                } else if (it.name === '.thumbnails') {
+                else if (it.name === '.thumbnails')
                     hasDotThumbnails = true;
-                } else {
+                else
                     subfolders.push(it);
-                }
                 break;
         }
     }
@@ -287,7 +286,6 @@ async function renderFolder(folderPath, focusBackName) {
         if (hasDotInfo) infoMap = await getInfoMap(folderPath);
         renderSubfolder(subfolders, focusBackName, infoMap);
     }
-
     const focusEl = document.getElementById('focused');
     if (focusEl) focusEl.focus();
     container.classList.add('show');
