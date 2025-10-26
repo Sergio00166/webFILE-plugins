@@ -30,12 +30,12 @@ img { pointer-events: none; }
  *  ------------------------- */
 
 #container::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 .desc-text::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
 }
 #container::-webkit-scrollbar-thumb {
     background-color: #555;
