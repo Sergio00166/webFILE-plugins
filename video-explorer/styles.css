@@ -30,8 +30,8 @@ img { pointer-events: none; }
  *  ------------------------- */
 
 #container::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
 }
 .desc-text::-webkit-scrollbar {
     width: 6px;
@@ -270,7 +270,7 @@ button {
     .grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (min-width: 1920px) {
-    .grid { grid-template-columns: repeat(5, 1fr); }<a
+    .grid { grid-template-columns: repeat(5, 1fr); }
 }
 @media (min-width: 2560px) {
     .grid { grid-template-columns: repeat(6, 1fr); }
