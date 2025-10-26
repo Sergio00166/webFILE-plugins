@@ -1,7 +1,6 @@
 /* Code by Sergio00166 */
 
 :root {
-    --gap: 1rem;
     --card-radius: 16px;
     --shadow: 0 4px 12px #0008;
     --accent: #bb86fc;
@@ -24,10 +23,28 @@ body {
     -webkit-user-select: none;
     user-select: none;
 }
-img { pointer-events: none; }
-::-webkit-scrollbar-thumb { background: #555;  }
-::-webkit-scrollbar-track { background: #1e1e1e; }
-
+img {
+	pointer-events: none;
+}
+#container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.desc-text::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+#container::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+}
+.desc-text::-webkit-scrollbar-thumb {
+    background-color: var(--accent);
+    border-radius: 4px;
+}
+#container::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
 
 /* -------------------------
  *  Main structure
@@ -55,7 +72,7 @@ img { pointer-events: none; }
 }
 .grid {
     display: grid;
-    gap: var(--gap);
+    gap: 16px;
 }
 button {
     padding: 0;
@@ -119,11 +136,12 @@ button {
 }
 .grid > button {
     display: flex;
+    align-items: center;
     overflow: hidden;
     flex-direction: column;
     background: #1e1e1e;
     border-radius: var(--card-radius);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow)
 }
 .subfolders > button {
     box-shadow: var(--shadow);
@@ -204,15 +222,15 @@ button {
 .desc-text {
     width: 100%;
     overflow: auto;
-    display: block;
+    display: flex;
     text-align: left;
-    align-content: center;
+    align-items: center;
     -webkit-user-select: text;
     user-select: text;
     white-space: pre-wrap;
     scrollbar-width: thin;
     height: var(--description_height);
-    scrollbar-color: var(--accent) var(--description-bg);
+	scrollbar-color: var(--accent) transparent;
 }
 
 /* -------------------------
@@ -249,7 +267,7 @@ button {
     .grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (min-width: 1920px) {
-    .grid { grid-template-columns: repeat(5, 1fr); }
+    .grid { grid-template-columns: repeat(5, 1fr); }<a
 }
 @media (min-width: 2560px) {
     .grid { grid-template-columns: repeat(6, 1fr); }
