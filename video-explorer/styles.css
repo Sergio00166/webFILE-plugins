@@ -225,7 +225,7 @@ button {
 .desc-text {
     width: 100%;
     overflow: auto;
-    display: flex;
+    display: grid;
     text-align: left;
     align-items: center;
     -webkit-user-select: text;
