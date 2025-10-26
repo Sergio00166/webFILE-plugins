@@ -19,11 +19,11 @@ To activate the plugin in any folder:
 
 Make sure each target folder contains the following:
 
-| File         | Role                                                       |
-|--------------|------------------------------------------------------------|
-| `index.web`  | Entry point HTML file that powers the plugin interface     |
-| `styles.css` | Visual styling for layout, responsiveness, and polish      |
-| `script.js`  | Interactivity, behavior, and feature enhancements          |
+| File         | Role                       |
+|--------------|----------------------------|
+| `index.web`  | Entry point HTML file      |
+| `styles.css` | Visual styling and layout  |
+| `script.js`  | Rendered and actions       |
 
 ---
 
