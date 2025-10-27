@@ -103,7 +103,7 @@ async function loadFolderPoster(el, poster, description) {
     if (description) {
         const td = el.querySelector('.desc-text');
         const t = await getText(description);
-        td.textContent = t;
+        td.innerHTML = t;
     }
 }
 
@@ -385,23 +385,20 @@ document.addEventListener('mouseup', event => {
 
 document.addEventListener('keydown', event => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+	let delta = 1;
 
     switch (event.key.toLowerCase()) {
+		case 'arrowup': delta -= 2;
         case 'arrowdown':
-            event.preventDefault();
-            moveFocus(1);
+			event.preventDefault();
+			const el = event.target.closest('.desc-text');
+			if (!el) moveFocus(delta);
+			else el.scrollTop += delta * 16;
             break;
-        case 'arrowup':
-            event.preventDefault();
-            moveFocus(-1);
-            break;
-        case 'home':
-            event.preventDefault();
-            moveFocus(-Infinity);
-            break;
+        case 'home': delta -= 2;
         case 'end':
             event.preventDefault();
-            moveFocus(Infinity);
+            moveFocus(delta * Infinity);
             break;
         case 'arrowleft':
             event.preventDefault();
