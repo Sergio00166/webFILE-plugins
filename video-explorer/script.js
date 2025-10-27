@@ -84,15 +84,18 @@ function createDescription(photos, description) {
 }
 
 async function loadFolderPoster(el, poster, description) {
-    const pc = el.querySelector('.poster-container');
-    const pbg = pc.querySelector('.poster-background');
-    const pimg = pc.querySelector('.poster-image');
-
     if (poster) {
+        const pc = el.querySelector('.poster-container');
+        const pbg = pc.querySelector('.poster-background');
+        const pimg = pc.querySelector('.poster-image');
+
         const bimg = new Image();
         bimg.src = poster + cache_suffix;
         pimg.src = poster + cache_suffix;
-        await Promise.all([loadImage(bimg), loadImage(pimg)]);
+
+        await Promise.all(
+            [loadImage(bimg), loadImage(pimg)]
+        );
         pbg.appendChild(bimg);
         pbg.classList.remove('loading');
         pimg.classList.add('loaded');

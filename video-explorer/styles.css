@@ -175,6 +175,37 @@ button {
 }
 
 /* -------------------------
+ *  Folder description
+ *  ------------------------- */
+
+.description {
+    gap: 36px;
+    padding: 8px;
+    background: var(--description-bg);
+    border: 1px solid var(--accent);
+    border-radius: var(--card-radius);
+    display: flex;
+    align-items: center;
+}
+.description > :only-child {
+    width: 100% !important;
+    text-align: center !important;
+}
+.desc-text {
+    width: 100%;
+    overflow: auto;
+    display: grid;
+    text-align: left;
+    align-items: center;
+    -webkit-user-select: text;
+    user-select: text;
+    white-space: pre-wrap;
+    scrollbar-width: thin;
+    height: var(--description_height);
+	scrollbar-color: var(--accent) transparent;
+}
+
+/* -------------------------
  *  Poster container & image
  *  ------------------------- */
 
@@ -207,33 +238,6 @@ button {
 }
 .poster-image.loaded {
     display: block;
-}
-
-/* -------------------------
- *  Folder description
- *  ------------------------- */
-
-.description {
-    gap: 36px;
-    padding: 8px;
-    background: var(--description-bg);
-    border: 1px solid var(--accent);
-    border-radius: var(--card-radius);
-    display: flex;
-    align-items: center;
-}
-.desc-text {
-    width: 100%;
-    overflow: auto;
-    display: grid;
-    text-align: left;
-    align-items: center;
-    -webkit-user-select: text;
-    user-select: text;
-    white-space: pre-wrap;
-    scrollbar-width: thin;
-    height: var(--description_height);
-	scrollbar-color: var(--accent) transparent;
 }
 
 /* -------------------------
