@@ -84,15 +84,18 @@ function createDescription(photos, description) {
 }
 
 async function loadFolderPoster(el, poster, description) {
-    const pc = el.querySelector('.poster-container');
-    const pbg = pc.querySelector('.poster-background');
-    const pimg = pc.querySelector('.poster-image');
-
     if (poster) {
+        const pc = el.querySelector('.poster-container');
+        const pbg = pc.querySelector('.poster-background');
+        const pimg = pc.querySelector('.poster-image');
+
         const bimg = new Image();
         bimg.src = poster + cache_suffix;
         pimg.src = poster + cache_suffix;
-        await Promise.all([loadImage(bimg), loadImage(pimg)]);
+
+        await Promise.all(
+            [loadImage(bimg), loadImage(pimg)]
+        );
         pbg.appendChild(bimg);
         pbg.classList.remove('loading');
         pimg.classList.add('loaded');
@@ -100,7 +103,7 @@ async function loadFolderPoster(el, poster, description) {
     if (description) {
         const td = el.querySelector('.desc-text');
         const t = await getText(description);
-        td.textContent = t;
+        td.innerHTML = t;
     }
 }
 
@@ -352,16 +355,11 @@ function moveFocus(direction) {
 
 container.addEventListener('click', event => {
     const clicked = event.target.closest(elsel_str);
-    event.stopPropagation();
     if (clicked) handleItemAction(clicked);
 });
 
 container.addEventListener('keydown', event => {
-    const focused = event.target.closest(elsel_str);
-    if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(event.key) !== -1) {
-        event.preventDefault();
-        handleItemAction(focused);
-    }
+    if (event.key === ' ') event.preventDefault();
 });
 
 document.addEventListener('mouseup', event => {
@@ -372,8 +370,7 @@ document.addEventListener('mouseup', event => {
             break;
         case 4:
             event.preventDefault();
-            const el = document.getElementById('focused');
-            if (el) handleItemAction(el);
+            document.activeElement.click();
             break;
         default:
             break;
@@ -382,27 +379,31 @@ document.addEventListener('mouseup', event => {
 
 document.addEventListener('keydown', event => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+	let delta = 1;
 
     switch (event.key.toLowerCase()) {
+		case 'arrowup': delta -= 2;
         case 'arrowdown':
-            event.preventDefault();
-            moveFocus(1);
+			event.preventDefault();
+			const el = event.target.closest('.desc-text');
+			if (!el) moveFocus(delta);
+			else el.scrollTop += delta * 16;
             break;
-        case 'arrowup':
-            event.preventDefault();
-            moveFocus(-1);
-            break;
-        case 'home':
-            event.preventDefault();
-            moveFocus(-Infinity);
-            break;
+
+        case 'home': delta -= 2;
         case 'end':
             event.preventDefault();
-            moveFocus(Infinity);
+            moveFocus(delta * Infinity);
             break;
+
         case 'arrowleft':
             event.preventDefault();
+        case 'backspace':
             goBack();
+            break;
+
+        case 'arrowright':
+            document.activeElement.click();
             break;
         case 'h':
             window.location.reload();

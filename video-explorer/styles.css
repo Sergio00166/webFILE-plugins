@@ -2,14 +2,11 @@
 
 :root {
     --card-radius: 16px;
-    --shadow: 0 4px 12px #0008;
     --accent: #bb86fc;
     --bar-bg: #1f1f1f;
-    --description-bg:#1e2c3a;
-    --description_height: 250px;
 }
 body {
-    margin: 0 ;
+    margin: 0;
     width: 100%;
     height: 100vh;
     height: 100dvh;
@@ -68,14 +65,17 @@ img { pointer-events: none; }
 	transition: opacity 0.2s;
 	opacity: 1;
 }
-.subfolders {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-.grid {
+.subfolders, .grid {
+	gap: 16px;
     display: grid;
-    gap: 16px;
+}
+.subfolders {
+	grid-template-columns:
+	    repeat(auto-fill, minmax(900px, 1fr));
+	}
+.grid {
+	grid-template-columns:
+	    repeat(auto-fill, minmax(400px, 1fr));
 }
 button {
     padding: 0;
@@ -144,12 +144,13 @@ button {
     flex-direction: column;
     background: #1e1e1e;
     border-radius: var(--card-radius);
-    box-shadow: var(--shadow)
+    box-shadow: 0 4px 12px #0008;
 }
 .subfolders > button {
-    box-shadow: var(--shadow);
-    background: var(--bar-bg);
-    border-radius: var(--card-radius);
+	min-height: 48px;
+	box-shadow: 0 4px 12px #0008;
+	background: var(--bar-bg);
+	border-radius: var(--card-radius);
 }
 
 /* -------------------------
@@ -175,13 +176,44 @@ button {
 }
 
 /* -------------------------
+ *  Folder description
+ *  ------------------------- */
+
+.description {
+    gap: 36px;
+    padding: 8px;
+	display: flex;
+    align-items: center;
+    background: #1e2c3a;
+    border: 1px solid var(--accent);
+    border-radius: var(--card-radius);
+}
+.description > :only-child {
+    width: 100%;
+    text-align: center;
+}
+.desc-text {
+    width: 100%;
+	height: 250px;
+    overflow: auto;
+    display: grid;
+    text-align: left;
+    align-items: center;
+    -webkit-user-select: text;
+    user-select: text;
+    white-space: pre-wrap;
+    scrollbar-width: thin;
+	scrollbar-color: var(--accent) transparent;
+}
+
+/* -------------------------
  *  Poster container & image
  *  ------------------------- */
 
 .poster-container {
+	max-height: 250px;
     aspect-ratio: 1/1;
     position: relative;
-    height: var(--description_height);
     border-radius: var(--card-radius);
     overflow: hidden;
     flex-shrink: 0;
@@ -210,33 +242,6 @@ button {
 }
 
 /* -------------------------
- *  Folder description
- *  ------------------------- */
-
-.description {
-    gap: 36px;
-    padding: 8px;
-    background: var(--description-bg);
-    border: 1px solid var(--accent);
-    border-radius: var(--card-radius);
-    display: flex;
-    align-items: center;
-}
-.desc-text {
-    width: 100%;
-    overflow: auto;
-    display: grid;
-    text-align: left;
-    align-items: center;
-    -webkit-user-select: text;
-    user-select: text;
-    white-space: pre-wrap;
-    scrollbar-width: thin;
-    height: var(--description_height);
-	scrollbar-color: var(--accent) transparent;
-}
-
-/* -------------------------
  *  Keyframes / animations
  *  ------------------------- */
 
@@ -257,42 +262,22 @@ button {
 }
 
 /* -------------------------
- *  Video Grid Responsive
- *  ------------------------- */
-
-@media (min-width: 600px) {
-    .grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (min-width: 1000px) {
-    .grid { grid-template-columns: repeat(3, 1fr); }
-}
-@media (min-width: 1500px) {
-    .grid { grid-template-columns: repeat(4, 1fr); }
-}
-@media (min-width: 1920px) {
-    .grid { grid-template-columns: repeat(5, 1fr); }
-}
-@media (min-width: 2560px) {
-    .grid { grid-template-columns: repeat(6, 1fr); }
-}
-@media (min-width: 3072px) {
-    .grid { grid-template-columns: repeat(7, 1fr); }
-}
-@media (min-width: 3840px) {
-    .grid { grid-template-columns: repeat(8, 1fr); }
-}
-
-/* -------------------------
  *  Responsive
  *  ------------------------- */
 
+@media (max-width: 960px) {
+	.subfolders { grid-template-columns: repeat(1,1fr);	}
+}
+@media (max-width: 460px) {
+	.grid { grid-template-columns: repeat(1,1fr); }
+}
 @media (max-width: 720px) {
+	.poster-container {
+        width: 100%;
+    }
     .description { 
         gap: 8px;
         flex-direction: column;
-    }
-    .poster-container {
-        width: 100%;
     }
 }
 /* Hide everything if display too small */
