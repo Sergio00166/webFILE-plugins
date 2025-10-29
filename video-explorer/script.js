@@ -355,16 +355,11 @@ function moveFocus(direction) {
 
 container.addEventListener('click', event => {
     const clicked = event.target.closest(elsel_str);
-    event.stopPropagation();
     if (clicked) handleItemAction(clicked);
 });
 
 container.addEventListener('keydown', event => {
-    const focused = event.target.closest(elsel_str);
-    if (focused && ['Enter', ' ', 'ArrowRight'].indexOf(event.key) !== -1) {
-        event.preventDefault();
-        handleItemAction(focused);
-    }
+    if (event.key === ' ') event.preventDefault();
 });
 
 document.addEventListener('mouseup', event => {
@@ -375,8 +370,7 @@ document.addEventListener('mouseup', event => {
             break;
         case 4:
             event.preventDefault();
-            const el = document.getElementById('focused');
-            if (el) handleItemAction(el);
+            document.activeElement.click();
             break;
         default:
             break;
@@ -395,14 +389,21 @@ document.addEventListener('keydown', event => {
 			if (!el) moveFocus(delta);
 			else el.scrollTop += delta * 16;
             break;
+
         case 'home': delta -= 2;
         case 'end':
             event.preventDefault();
             moveFocus(delta * Infinity);
             break;
+
         case 'arrowleft':
             event.preventDefault();
+        case 'backspace':
             goBack();
+            break;
+
+        case 'arrowright':
+            document.activeElement.click();
             break;
         case 'h':
             window.location.reload();
