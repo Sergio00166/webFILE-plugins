@@ -1,11 +1,11 @@
-# 🎞️ webFILE VideoExplorer Plugin
+# webFILE VideoExplorer Plugin
 
 This plugin replaces the default file listing UI from the webFILE server with an optimized layout for videos.    
 Using descriptions and posters for the folders and thumbnails for the videos files.
 
 ---
 
-## 🚀 Installation Guide
+## Installation Guide
 
 To activate the plugin in any folder:
 
@@ -15,7 +15,7 @@ To activate the plugin in any folder:
 
 ---
 
-## 📦 Required Files
+## Required Files
 
 Make sure each target folder contains the following:
 
@@ -27,20 +27,20 @@ Make sure each target folder contains the following:
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- 📽 **Video Auto-Detection** — Automatically detects supported video formats within each folder  
-- 🖼 **Thumbnails** — Loads preview images from the `.thumbnails/` directory alongside the videos  
-- 📝 **Folder Descriptions**  
+- **Video Auto-Detection** — Automatically detects supported video formats within each folder  
+- **Thumbnails** — Loads preview images from the `.thumbnails/` directory alongside the videos  
+- **Folder Descriptions**  
   - **Prelook (from parent view):** Reads description text from `.info/<folder>.txt`  
   - **Inside the folder:** Reads `description.txt` located directly inside the folder  
-- 🎬 **Poster Image Display**  
+- **Poster Image Display**  
   - **Prelook (from parent view):** Uses `.info/<folder>.png` as the folder’s preview poster  
   - **Inside the folder:** Uses `poster.jpg` located inside the folder as its banner  
 
 ---
 
-## 🧱 Recommended Folder Structure
+## Example of Folder Structure
 
 ```plaintext
 .info/

@@ -292,7 +292,7 @@ button {
 @media (hover: hover) {
     .subfolders > button:hover,
     .grid > button:hover {
-        box-shadow: 0 0 4px #fff;
+        box-shadow: 0 0 4px white;
     }
 }
 .subfolders > button:focus-visible,
