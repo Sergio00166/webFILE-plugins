@@ -27,12 +27,10 @@ img { pointer-events: none; }
  *  ------------------------- */
 
 #container::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
+    width: 9px; height: 9px;
 }
 .desc-text::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 6px; height: 6px;
 }
 #container::-webkit-scrollbar-thumb {
     background-color: #555;
@@ -292,7 +290,7 @@ button {
 @media (hover: hover) {
     .subfolders > button:hover,
     .grid > button:hover {
-        box-shadow: 0 0 4px #fff;
+        box-shadow: 0 0 4px white;
     }
 }
 .subfolders > button:focus-visible,
