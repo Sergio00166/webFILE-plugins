@@ -27,12 +27,10 @@ img { pointer-events: none; }
  *  ------------------------- */
 
 #container::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
+    width: 9px; height: 9px;
 }
 .desc-text::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 6px; height: 6px;
 }
 #container::-webkit-scrollbar-thumb {
     background-color: #555;
