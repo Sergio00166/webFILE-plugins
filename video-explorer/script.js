@@ -273,7 +273,7 @@ async function renderFolder(folderPath, focusBackName) {
     container.innerHTML = '';
     currentPath = folderPath;
 
-    const titleEl = document.querySelector('.path-title');
+    const titleEl = document.querySelector('#path-bar pre');
     titleEl.textContent = decodeURIComponent(folderPath);
 
     const items = await getJSON(folderPath);
