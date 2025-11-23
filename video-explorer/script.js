@@ -273,7 +273,7 @@ async function renderFolder(folderPath, focusBackName) {
     container.innerHTML = '';
     currentPath = folderPath;
 
-    const titleEl = document.querySelector('.path-title');
+    const titleEl = document.querySelector('#path-bar pre');
     titleEl.textContent = decodeURIComponent(folderPath);
 
     const items = await getJSON(folderPath);
@@ -308,7 +308,7 @@ function handleItemAction(el) {
         focusStack.push(name);
         container.scrollTo(0, 0);
         renderFolder(currentPath + encoded + '/');
-    } 
+    }
     if (parent.classList.contains('grid'))
         window.open(currentPath + encoded, '_blank');
 }

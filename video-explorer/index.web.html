@@ -2,24 +2,24 @@
 
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <link rel="icon" type="image/x-icon" href="/?static=ico/video.ico">
-        <title>Video Navigator</title>
-        <link rel="stylesheet" href="./styles.css?cache">
-        <script defer="defer" src="./script.js?cache"></script>
-    </head>
-    <body>
-        <div class="path-bar">
-            <button onclick="goBack()" title="Parent">
-                <img src="/static/svg/index/arrow-left-solid.svg">
-            </button>
-            <button onclick="window.location.reload()" title="Home (H)">
-                <img src="/static/svg/index/house-chimney-solid.svg">
-            </button>
-            <pre class="path-title">/</pre>
-        </div>
-        <div id="container"></div>
-    </body>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="/static/ico/video.ico">
+    <title>Video Navigator</title>
+    <link rel="stylesheet" href="./styles.css?cache">
+    <script defer="defer" src="./script.js?cache"></script>
+  </head>
+  <body>
+    <div id="path-bar">
+      <button onclick="goBack()" title="Parent">
+        <img src="/static/svg/index/arrow-left-solid.svg">
+      </button>
+      <button onclick="window.location.reload()" title="Home (H)">
+        <img src="/static/svg/index/house-chimney-solid.svg">
+      </button>
+      <pre>/</pre>
+    </div>
+    <div id="container"></div>
+  </body>
 </html>
