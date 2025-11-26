@@ -11,6 +11,7 @@ const ioCallbacks = new Map();
 const focusStack = [];
 
 const container = document.getElementById('container');
+const pathElement = document.getElementById('path-text');
 const elsel_str = '.grid > button, .subfolders > button';
 
 // ============================================================================
@@ -272,9 +273,7 @@ async function renderFolder(folderPath, focusBackName) {
     container.classList.remove('show');
     container.innerHTML = '';
     currentPath = folderPath;
-
-    const titleEl = document.querySelector('#path-bar pre');
-    titleEl.textContent = decodeURIComponent(folderPath);
+    pathElement.textContent = decodeURIComponent(folderPath);
 
     const items = await getJSON(folderPath);
     const [hasDotInfo, hasDotThumbnails, subfolders, videos] = separateFolderItems(items);

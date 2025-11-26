@@ -8,6 +8,7 @@
     <link rel="icon" type="image/x-icon" href="/static/ico/video.ico">
     <title>Video Navigator</title>
     <link rel="stylesheet" href="./styles.css?cache">
+    <link rel="stylesheet" href="/static/css/path-bar.css">
     <script defer="defer" src="./script.js?cache"></script>
   </head>
   <body>
@@ -18,7 +19,9 @@
       <button onclick="window.location.reload()" title="Home (H)">
         <img src="/static/svg/index/house-chimney-solid.svg">
       </button>
-      <pre>/</pre>
+      <span class="path-box">
+        <pre id="path-text">/</pre>
+      </span>
     </div>
     <div id="container"></div>
   </body>
