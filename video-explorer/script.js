@@ -1,45 +1,45 @@
 /* Code by Sergio00166 */
 
 const {pathname} = window.location;
-const pathSegments = pathname.split('/');
-if (!pathSegments.pop().includes('.')) pathSegments.push('');
-const basePath = pathSegments.join('/') + '/';
+const pathSegments = pathname.split("/");
+if (!pathSegments.pop().includes(".")) pathSegments.push("");
+const basePath = pathSegments.join("/") + "/";
 
 let currentPath = basePath;
-const cache_suffix = '?get=cached';
+const cache_suffix = "?get=cached";
 const ioCallbacks = new Map();
 const focusStack = [];
 
-const container = document.getElementById('container');
-const pathElement = document.getElementById('path-text');
-const elsel_str = '.grid > button, .subfolders > button';
+const container = document.getElementById("container");
+const pathElement = document.getElementById("path-text");
+const elsel_str = ".grid > button, .subfolders > button";
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
 function createDiv(className, props) {
-    const d = document.createElement('div');
+    const d = document.createElement("div");
     d.className = className;
     if (props) Object.assign(d, props);
     return d;
 }
 
 function loadImage(img) {
-    if (typeof img.decode === 'function') return img.decode();
+    if (typeof img.decode === "function") return img.decode();
     return new Promise(function(res) { img.onload = res; });
 }
 
 function getJSON(path) {
-    return fetch(path + '?get=json')
+    return fetch(path + "?get=json")
       .then(r => r.ok && r.json() || [])
       .catch(() => []);
 }
 
 function getText(path) {
     return fetch(path + cache_suffix)
-      .then(r => r.ok && r.text() || '')
-      .catch(() => '');
+      .then(r => r.ok && r.text() || "")
+      .catch(() => "");
 }
 
 // ============================================================================
@@ -55,7 +55,7 @@ const globalObserver = new IntersectionObserver(entries => {
             globalObserver.unobserve(entry.target);
         }
     }
-},{ rootMargin: '200px' });
+},{ rootMargin: "200px" });
 
 function attachObserver(el, callback) {
     ioCallbacks.set(el, callback);
@@ -67,20 +67,20 @@ function attachObserver(el, callback) {
 // ============================================================================
 
 function createDescription(photos, description) {
-    const desc = createDiv('description');
+    const desc = createDiv("description");
 
     if (photos) {
-        const pc = createDiv('poster-container');
-        const pbg = createDiv('poster-background');
-        pbg.classList.add('loading');
-        const pimg = document.createElement('img');
-        pimg.className = 'poster-image';
+        const pc = createDiv("poster-container");
+        const pbg = createDiv("poster-background");
+        pbg.classList.add("loading");
+        const pimg = document.createElement("img");
+        pimg.className = "poster-image";
         pc.appendChild(pbg);
         pc.appendChild(pimg);
         desc.appendChild(pc);
     }
     if (description) {
-        const td = createDiv('desc-text');
+        const td = createDiv("desc-text");
         desc.appendChild(td);
     }
     return desc;
@@ -88,9 +88,9 @@ function createDescription(photos, description) {
 
 async function loadFolderPoster(el, poster, description) {
     if (poster) {
-        const pc = el.querySelector('.poster-container');
-        const pbg = pc.querySelector('.poster-background');
-        const pimg = pc.querySelector('.poster-image');
+        const pc = el.querySelector(".poster-container");
+        const pbg = pc.querySelector(".poster-background");
+        const pimg = pc.querySelector(".poster-image");
 
         const bimg = new Image();
         bimg.src = poster + cache_suffix;
@@ -100,11 +100,11 @@ async function loadFolderPoster(el, poster, description) {
             [loadImage(bimg), loadImage(pimg)]
         );
         pbg.appendChild(bimg);
-        pbg.classList.remove('loading');
-        pimg.classList.add('loaded');
+        pbg.classList.remove("loading");
+        pimg.classList.add("loaded");
     }
     if (description) {
-        const td = el.querySelector('.desc-text');
+        const td = el.querySelector(".desc-text");
         const t = await getText(description);
         td.innerHTML = t;
     }
@@ -124,17 +124,17 @@ function addMainDescription(curPoster, curDesc) {
 
 async function getInfoMap(folderPath) {
     const folderMap = new Map();
-    const infoItems = await getJSON(folderPath + '.info/');
+    const infoItems = await getJSON(folderPath + ".info/");
 
     for (const it of infoItems) {
-        const elDirPath = it.name.split('.')[0];
+        const elDirPath = it.name.split(".")[0];
         const entry = folderMap.get(elDirPath) || [null, null];
 
         switch (it.type) {
-            case 'photo':
+            case "photo":
                 entry[0] = it.path;
                 break;
-            case 'text':
+            case "text":
                 if (it.name === `${elDirPath}.txt`)
                     entry[1] = it.path;
                 break;
@@ -145,7 +145,7 @@ async function getInfoMap(folderPath) {
 }
 
 function renderFolderContent(folderName, containerElement, infoMap) {
-    const title = createDiv('title');
+    const title = createDiv("title");
     title.textContent = folderName;
     containerElement.appendChild(title);
 
@@ -158,13 +158,13 @@ function renderFolderContent(folderName, containerElement, infoMap) {
 }
 
 function renderSubfolder(subfolders, focusBackName, infoMap) {
-    const subContainer = createDiv('subfolders');
+    const subContainer = createDiv("subfolders");
 
     for (let i = 0; i < subfolders.length; i++) {
         const subfolder = subfolders[i];
-        const el = document.createElement('button');
+        const el = document.createElement("button");
 
-        if (subfolder.name === focusBackName) el.id = 'focused';
+        if (subfolder.name === focusBackName) el.id = "focused";
         subContainer.appendChild(el);
         renderFolderContent(subfolder.name, el, infoMap);
     }
@@ -176,22 +176,22 @@ function renderSubfolder(subfolders, focusBackName, infoMap) {
 // ============================================================================
 
 async function loadThumbnail(el, thumbItem) {
-    el.classList.add('loading');
+    el.classList.add("loading");
     if (!thumbItem) return;
     const img = new Image();
     img.src = thumbItem + cache_suffix;
     el.appendChild(img);
     await loadImage(img);
-    el.classList.remove('loading');
+    el.classList.remove("loading");
 }
 
 async function getThumbsMap(folderPath) {
     const thumbsMap = new Map();
-    const thumbsList = await getJSON(folderPath + '.thumbnails/');
+    const thumbsList = await getJSON(folderPath + ".thumbnails/");
 
     for (let i = 0; i < thumbsList.length; i++) {
         const it = thumbsList[i];
-        const base = it.name.replace(/\.[^/.]+$/, '');
+        const base = it.name.replace(/\.[^/.]+$/, "");
         thumbsMap.set(base, it.path);
     }
     return thumbsMap;
@@ -202,20 +202,20 @@ async function getThumbsMap(folderPath) {
 // ============================================================================
 
 function appendGrid(parent, videos, thumbsMap) {
-    const grid = createDiv('grid');
+    const grid = createDiv("grid");
     parent.appendChild(grid);
     let frag = null;
 
     for (let i = 0; i < videos.length; i++) {
         if (i % 8 === 0) frag = document.createDocumentFragment();
         const v = videos[i];
-        const card = document.createElement('button');
-        const thumb = createDiv('thumb');
+        const card = document.createElement("button");
+        const thumb = createDiv("thumb");
 
-        const thumbItem = thumbsMap.get(v.name.replace(/\.[^/.]+$/, '')) || null;
+        const thumbItem = thumbsMap.get(v.name.replace(/\.[^/.]+$/, "")) || null;
         attachObserver(thumb, el => loadThumbnail(el, thumbItem));
 
-        const title = createDiv('title');
+        const title = createDiv("title");
         title.textContent = v.name;
         card.appendChild(thumb);
         card.appendChild(title);
@@ -231,8 +231,8 @@ function appendGrid(parent, videos, thumbsMap) {
 // ============================================================================
 
 function separateFolderItems(items) {
-    let curDesc = '';
-    let curPoster = '';
+    let curDesc = "";
+    let curPoster = "";
     const subfolders = [];
     const videos = [];
     let hasDotInfo = false;
@@ -242,21 +242,21 @@ function separateFolderItems(items) {
         const it = items[i];
 
         switch (it.type) {
-            case 'photo':
-                if (!curPoster && it.name.startsWith('poster.'))
+            case "photo":
+                if (!curPoster && it.name.startsWith("poster."))
                     curPoster = it.path;
                 break;
-            case 'text':
-                if (!curDesc && it.name === 'description.txt')
+            case "text":
+                if (!curDesc && it.name === "description.txt")
                     curDesc = it.path;
                 break;
-            case 'video':
+            case "video":
                 videos.push(it);
                 break;
-            case 'directory':
-                if (it.name === '.info')
+            case "directory":
+                if (it.name === ".info")
                     hasDotInfo = true;
-                else if (it.name === '.thumbnails')
+                else if (it.name === ".thumbnails")
                     hasDotThumbnails = true;
                 else
                     subfolders.push(it);
@@ -272,8 +272,8 @@ function separateFolderItems(items) {
 // ============================================================================
 
 async function renderFolder(folderPath, focusBackName) {
-    container.classList.remove('show');
-    container.innerHTML = '';
+    container.classList.remove("show");
+    container.innerHTML = "";
     currentPath = folderPath;
     pathElement.textContent = decodeURIComponent(folderPath);
 
@@ -290,9 +290,9 @@ async function renderFolder(folderPath, focusBackName) {
         if (hasDotInfo) infoMap = await getInfoMap(folderPath);
         renderSubfolder(subfolders, focusBackName, infoMap);
     }
-    const focusEl = document.getElementById('focused');
+    const focusEl = document.getElementById("focused");
     if (focusEl) focusEl.focus();
-    container.classList.add('show');
+    container.classList.add("show");
 }
 
 // ============================================================================
@@ -300,32 +300,32 @@ async function renderFolder(folderPath, focusBackName) {
 // ============================================================================
 
 function handleItemAction(el) {
-    const nameEl = el.querySelector('.title');
+    const nameEl = el.querySelector(".title");
     const name = nameEl.textContent;
     const encoded = encodeURIComponent(name);
     const parent = el.parentElement;
 
-    if (parent.classList.contains('subfolders')) {
+    if (parent.classList.contains("subfolders")) {
         focusStack.push(name);
         container.scrollTo(0, 0);
-        renderFolder(currentPath + encoded + '/');
+        renderFolder(currentPath + encoded + "/");
     }
-    if (parent.classList.contains('grid'))
-        window.open(currentPath + encoded, '_blank');
+    if (parent.classList.contains("grid"))
+        window.open(currentPath + encoded, "_blank");
 }
 
 function goBack() {
-    const cur = currentPath.split('/').filter(Boolean);
-    const base = basePath.split('/').filter(Boolean);
+    const cur = currentPath.split("/").filter(Boolean);
+    const base = basePath.split("/").filter(Boolean);
 
     if (cur.length <= base.length && currentPath.indexOf(basePath) === 0) {
-        const exitPath = '/' + base.slice(0, -1).join('/');
-        if (exitPath === '') window.location.href = '/';
+        const exitPath = "/" + base.slice(0, -1).join("/");
+        if (exitPath === "") window.location.href = "/";
         else window.location.href = exitPath;
         return;
     }
-    let parent = '/' + cur.slice(0, -1).join('/');
-    if (!parent.endsWith('/')) parent += '/';
+    let parent = "/" + cur.slice(0, -1).join("/");
+    if (!parent.endsWith("/")) parent += "/";
 
     const focusBackName = focusStack.pop() || null;
     renderFolder(parent, focusBackName);
@@ -354,16 +354,16 @@ function moveFocus(direction) {
 // EVENTS
 // ============================================================================
 
-container.addEventListener('click', event => {
+container.addEventListener("click", event => {
     const clicked = event.target.closest(elsel_str);
     if (clicked) handleItemAction(clicked);
 });
 
-container.addEventListener('keydown', event => {
-    if (event.key === ' ') event.preventDefault();
+container.addEventListener("keydown", event => {
+    if (event.key === " ") event.preventDefault();
 });
 
-document.addEventListener('mouseup', event => {
+document.addEventListener("mouseup", event => {
     switch (event.button) {
         case 3:
             event.preventDefault();
@@ -378,35 +378,35 @@ document.addEventListener('mouseup', event => {
     }
 });
 
-document.addEventListener('keydown', event => {
+document.addEventListener("keydown", event => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
 	let delta = 1;
 
     switch (event.key.toLowerCase()) {
-		case 'arrowup': delta -= 2;
-        case 'arrowdown':
+		case "arrowup": delta -= 2;
+        case "arrowdown":
 			event.preventDefault();
-			const el = event.target.closest('.desc-text');
+			const el = event.target.closest(".desc-text");
 			if (!el) moveFocus(delta);
 			else el.scrollTop += delta * 16;
             break;
 
-        case 'home': delta -= 2;
-        case 'end':
+        case "home": delta -= 2;
+        case "end":
             event.preventDefault();
             moveFocus(delta * Infinity);
             break;
 
-        case 'arrowleft':
+        case "arrowleft":
             event.preventDefault();
-        case 'backspace':
+        case "backspace":
             goBack();
             break;
 
-        case 'arrowright':
+        case "arrowright":
             document.activeElement.click();
             break;
-        case 'h':
+        case "h":
             window.location.reload();
             break;
         default:
