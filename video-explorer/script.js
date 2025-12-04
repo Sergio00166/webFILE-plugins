@@ -6,7 +6,7 @@ if (!pathSegments.pop().includes('.')) pathSegments.push('');
 const basePath = pathSegments.join('/') + '/';
 
 let currentPath = basePath;
-const cache_suffix = '?cache';
+const cache_suffix = '?get=cached';
 const ioCallbacks = new Map();
 const focusStack = [];
 
@@ -31,13 +31,15 @@ function loadImage(img) {
 }
 
 function getJSON(path) {
-    return fetch(path, { headers: { Accept: 'application/json' } })
-    .then(r => r.json()).catch(() => []);
+    return fetch(path + '?get=json')
+      .then(r => r.ok && r.json() || [])
+      .catch(() => []);
 }
 
 function getText(path) {
-    return fetch(path + cache_suffix, { headers: { Accept: 'text/plain' } })
-    .then(r => r.text()).catch(() => '');
+    return fetch(path + cache_suffix)
+      .then(r => r.ok && r.text() || '')
+      .catch(() => '');
 }
 
 // ============================================================================
