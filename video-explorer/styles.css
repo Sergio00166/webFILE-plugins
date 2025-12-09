@@ -157,10 +157,12 @@ button {
     display: grid;
     text-align: left;
     align-items: center;
+    position: relative;
     -webkit-user-select: text;
     user-select: text;
     white-space: pre-wrap;
     scrollbar-width: thin;
+    border-radius: inherit;
 	scrollbar-color: var(--accent) transparent;
 }
 
@@ -169,8 +171,8 @@ button {
  *  ------------------------- */
 
 .poster-container {
-	max-height: 250px;
-    aspect-ratio: 1/1;
+    height: 250px;
+    min-width: 250px;
     position: relative;
     border-radius: var(--card-radius);
     overflow: hidden;
@@ -188,35 +190,47 @@ button {
     display: block;
 }
 .poster-image {
+    z-index: 2;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    display: none;
-    position: relative;
-    z-index: 2;
-}
-.poster-image.loaded {
     display: block;
+    position: relative;
+    object-fit: contain;
 }
 
 /* -------------------------
  *  Keyframes / animations
  *  ------------------------- */
 
-@keyframes loadingAnim {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+.desc-text.loading,
+.poster-container.loading {
+    border-radius: inherit;
+    background: linear-gradient(
+        90deg, #2c3e50 0%, 
+        #34495e 20%, #3b5770 40%,
+        #34495e 60%, #2c3e50 100%
+    );
+    background-size: 200% 100%;
+    animation: loadingAnim 1.5s infinite;
 }
-
-.poster-background.loading,
-.thumb.loading::before,
-.poster-background.loading::before {
+.thumb.loading::before {
     inset: 0;
     content: "";
     position: absolute;
-    background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+    border-radius: inherit;
+    background: linear-gradient(
+        90deg, #444 25%,
+        #555 50%, #444 75%
+    );
     background-size: 200% 100%;
     animation: loadingAnim 1.5s infinite;
+}
+.loading > * {
+    visibility: hidden;
+}
+@keyframes loadingAnim {
+    0%   { background-position:  200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 /* -------------------------

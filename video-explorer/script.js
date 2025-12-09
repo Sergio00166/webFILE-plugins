@@ -6,6 +6,7 @@ if (!pathSegments.pop().includes(".")) pathSegments.push("");
 const basePath = pathSegments.join("/") + "/";
 
 let currentPath = basePath;
+let renderLock = 0;
 const cache_suffix = "?get=cached";
 const ioCallbacks = new Map();
 const focusStack = [];
@@ -63,30 +64,10 @@ function attachObserver(el, callback) {
 }
 
 // ============================================================================
-// DESCRIPTION & POSTER HANDLING
+//  ITEM LOADERS
 // ============================================================================
 
-function createDescription(photos, description) {
-    const desc = createDiv("description");
-
-    if (photos) {
-        const pc = createDiv("poster-container");
-        const pbg = createDiv("poster-background");
-        pbg.classList.add("loading");
-        const pimg = document.createElement("img");
-        pimg.className = "poster-image";
-        pc.appendChild(pbg);
-        pc.appendChild(pimg);
-        desc.appendChild(pc);
-    }
-    if (description) {
-        const td = createDiv("desc-text");
-        desc.appendChild(td);
-    }
-    return desc;
-}
-
-async function loadFolderPoster(el, poster, description) {
+async function loadFolderInfo(el, poster, description) {
     if (poster) {
         const pc = el.querySelector(".poster-container");
         const pbg = pc.querySelector(".poster-background");
@@ -100,80 +81,15 @@ async function loadFolderPoster(el, poster, description) {
             [loadImage(bimg), loadImage(pimg)]
         );
         pbg.appendChild(bimg);
-        pbg.classList.remove("loading");
-        pimg.classList.add("loaded");
+        pc.classList.remove("loading");
     }
     if (description) {
         const td = el.querySelector(".desc-text");
         const t = await getText(description);
         td.innerHTML = t;
+        td.classList.remove("loading");
     }
 }
-
-function addMainDescription(curPoster, curDesc) {
-    if (curPoster || curDesc) {
-        const descEl = createDescription(curPoster, curDesc);
-        container.appendChild(descEl);
-        attachObserver(descEl, el => loadFolderPoster(el, curPoster, curDesc));
-    }
-}
-
-// ============================================================================
-// SUBFOLDER / INFO HANDLING
-// ============================================================================
-
-async function getInfoMap(folderPath) {
-    const folderMap = new Map();
-    const infoItems = await getJSON(folderPath + ".info/");
-
-    for (const it of infoItems) {
-        const elDirPath = it.name.split(".")[0];
-        const entry = folderMap.get(elDirPath) || [null, null];
-
-        switch (it.type) {
-            case "photo":
-                entry[0] = it.path;
-                break;
-            case "text":
-                if (it.name === `${elDirPath}.txt`)
-                    entry[1] = it.path;
-                break;
-        }
-        folderMap.set(elDirPath, entry);
-    }
-    return folderMap;
-}
-
-function renderFolderContent(folderName, containerElement, infoMap) {
-    const title = createDiv("title");
-    title.textContent = folderName;
-    containerElement.appendChild(title);
-
-    const out = infoMap.get(folderName);
-    if (!out) return;
-
-    const descEl = createDescription(out[0], out[1]);
-    containerElement.appendChild(descEl);
-    attachObserver(descEl, el => loadFolderPoster(el, out[0], out[1]));
-}
-
-function renderSubfolder(subfolders, focusBackName, infoMap) {
-    const subContainer = createDiv("subfolders");
-
-    for (let i = 0; i < subfolders.length; i++) {
-        const subfolder = subfolders[i];
-        const el = document.createElement("button");
-
-        if (subfolder.name === focusBackName) el.id = "focused";
-        subContainer.appendChild(el);
-        renderFolderContent(subfolder.name, el, infoMap);
-    }
-    container.appendChild(subContainer);
-}
-
-// ============================================================================
-// THUMBNAILS HANDLING
-// ============================================================================
 
 async function loadThumbnail(el, thumbItem) {
     el.classList.add("loading");
@@ -185,16 +101,53 @@ async function loadThumbnail(el, thumbItem) {
     el.classList.remove("loading");
 }
 
-async function getThumbsMap(folderPath) {
-    const thumbsMap = new Map();
-    const thumbsList = await getJSON(folderPath + ".thumbnails/");
+// ============================================================================
+//  DESCRIPTION HELPER
+// ============================================================================
 
-    for (let i = 0; i < thumbsList.length; i++) {
-        const it = thumbsList[i];
-        const base = it.name.replace(/\.[^/.]+$/, "");
-        thumbsMap.set(base, it.path);
+function createDescription(parent, photos, description) {
+    const desc = createDiv("description");
+
+    if (photos) {
+        const pc = createDiv("poster-container loading");
+        const pbg = createDiv("poster-background");
+        const pimg = document.createElement("img");
+        pimg.className = "poster-image";
+        pc.appendChild(pbg);
+        pc.appendChild(pimg);
+        desc.appendChild(pc);
     }
-    return thumbsMap;
+    if (description) {
+        const td = createDiv("desc-text");
+        td.classList.add("loading");
+        desc.appendChild(td);
+    }
+    parent.appendChild(desc);
+    attachObserver(desc, el => loadFolderInfo(el, photos, description));
+}
+
+// ============================================================================
+// SUBFOLDER RENDERING
+// ============================================================================
+
+function renderSubfolder(subfolders, focusBackName, infoMap) {
+    const subContainer = createDiv("subfolders");
+
+    for (let i = 0; i < subfolders.length; i++) {
+        const subfolder = subfolders[i];
+        const el = document.createElement("button");
+
+        if (subfolder.name === focusBackName) el.id = "focused";
+        subContainer.appendChild(el);
+
+        const title = createDiv("title");
+        title.textContent = subfolder.name;
+        el.appendChild(title);
+
+        const out = infoMap.get(subfolder.name);
+        if (out) createDescription(el, out[0], out[1]);
+    }
+    container.appendChild(subContainer);
 }
 
 // ============================================================================
@@ -227,44 +180,82 @@ function appendGrid(parent, videos, thumbsMap) {
 }
 
 // ============================================================================
-// FOLDER HELPERS
+// ITEM FILTERING
 // ============================================================================
 
-function separateFolderItems(items) {
-    let curDesc = "";
-    let curPoster = "";
-    const subfolders = [];
-    const videos = [];
-    let hasDotInfo = false;
-    let hasDotThumbnails = false;
+async function getThumbsMap(folderPath) {
+    const thumbsMap = new Map();
+    const thumbsList = await getJSON(folderPath + ".thumbnails/");
 
-    for (let i = 0, len = items.length; i < len; i++) {
-        const it = items[i];
+    for (let i = 0; i < thumbsList.length; i++) {
+        const it = thumbsList[i];
+        const base = it.name.replace(/\.[^/.]+$/, "");
+        thumbsMap.set(base, it.path);
+    }
+    return thumbsMap;
+}
+
+async function getInfoMap(folderPath) {
+    const folderMap = new Map();
+    const infoItems = await getJSON(folderPath + ".info/");
+
+    for (const it of infoItems) {
+        const elDirPath = it.name.split(".")[0];
+        const entry = folderMap.get(elDirPath) || [null, null];
 
         switch (it.type) {
             case "photo":
-                if (!curPoster && it.name.startsWith("poster."))
-                    curPoster = it.path;
+                entry[0] = it.path;
                 break;
             case "text":
-                if (!curDesc && it.name === "description.txt")
-                    curDesc = it.path;
+                if (it.name === `${elDirPath}.txt`)
+                    entry[1] = it.path;
+                break;
+        }
+        folderMap.set(elDirPath, entry);
+    }
+    return folderMap;
+}
+
+// ============================================================================
+// MAIN FILTERING
+// ============================================================================
+
+function filterFolderItems(items) {
+    const data = {
+        videos: [],
+        selfDesc: "",
+        selfPoster: "",
+        subfolders: [],
+        hasDotInfo: false,
+        hasDotThumbs: false,
+    };
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        switch (item.type) {
+            case "photo":
+                if (!data.selfPoster && item.name.startsWith("poster."))
+                    data.selfPoster = item.path;
+                break;
+            case "text":
+                if (!data.selfDesc && item.name === "description.txt")
+                    data.selfDesc = item.path;
                 break;
             case "video":
-                videos.push(it);
+                data.videos.push(item);
                 break;
             case "directory":
-                if (it.name === ".info")
-                    hasDotInfo = true;
-                else if (it.name === ".thumbnails")
-                    hasDotThumbnails = true;
-                else
-                    subfolders.push(it);
+                if (item.name === ".info")
+                    data.hasDotInfo = true;
+                else if (item.name === ".thumbnails")
+                    data.hasDotThumbs = true;
+                else 
+                    data.subfolders.push(item);
                 break;
         }
     }
-    addMainDescription(curPoster, curDesc);
-    return [hasDotInfo, hasDotThumbnails, subfolders, videos];
+    return data;
 }
 
 // ============================================================================
@@ -272,28 +263,33 @@ function separateFolderItems(items) {
 // ============================================================================
 
 async function renderFolder(folderPath, focusBackName) {
-    container.classList.remove("show");
-    container.innerHTML = "";
     currentPath = folderPath;
     pathElement.textContent = decodeURIComponent(folderPath);
+    container.classList.remove("show");
 
     const items = await getJSON(folderPath);
-    const [hasDotInfo, hasDotThumbnails, subfolders, videos] = separateFolderItems(items);
+    const data = filterFolderItems(items);
+    container.innerHTML = "";
 
-    if (videos.length) {
+    if (data.selfPoster || data.selfDesc) 
+        createDescription(container, data.selfPoster, data.selfDesc);
+
+    if (data.videos.length) {
         let thumbsMap = new Map();
-        if (hasDotThumbnails) thumbsMap = await getThumbsMap(folderPath);
-        appendGrid(container, videos, thumbsMap);
+        if (data.hasDotThumbs) thumbsMap = await getThumbsMap(folderPath);
+        appendGrid(container, data.videos, thumbsMap);
     }
-    if (subfolders.length) {
+    if (data.subfolders.length) {
         let infoMap = new Map();
-        if (hasDotInfo) infoMap = await getInfoMap(folderPath);
-        renderSubfolder(subfolders, focusBackName, infoMap);
+        if (data.hasDotInfo) infoMap = await getInfoMap(folderPath);
+        renderSubfolder(data.subfolders, focusBackName, infoMap);
     }
+
     const focusEl = document.getElementById("focused");
     if (focusEl) focusEl.focus();
     container.classList.add("show");
 }
+
 
 // ============================================================================
 // NAVIGATION & FOCUS
