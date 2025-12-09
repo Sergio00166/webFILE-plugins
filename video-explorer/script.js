@@ -264,12 +264,12 @@ function filterFolderItems(items) {
 
 async function renderFolder(folderPath, focusBackName) {
     currentPath = folderPath;
-    pathElement.textContent = decodeURIComponent(folderPath);
-    container.classList.remove("show");
-
     const items = await getJSON(folderPath);
     const data = filterFolderItems(items);
+    
     container.innerHTML = "";
+    container.classList.remove("show");
+    pathElement.textContent = decodeURIComponent(folderPath);
 
     if (data.selfPoster || data.selfDesc) 
         createDescription(container, data.selfPoster, data.selfDesc);
@@ -284,12 +284,12 @@ async function renderFolder(folderPath, focusBackName) {
         if (data.hasDotInfo) infoMap = await getInfoMap(folderPath);
         renderSubfolder(data.subfolders, focusBackName, infoMap);
     }
-
     const focusEl = document.getElementById("focused");
     if (focusEl) focusEl.focus();
+    else container.scrollTo(0, 0);
+
     container.classList.add("show");
 }
-
 
 // ============================================================================
 // NAVIGATION & FOCUS
@@ -303,7 +303,6 @@ function handleItemAction(el) {
 
     if (parent.classList.contains("subfolders")) {
         focusStack.push(name);
-        container.scrollTo(0, 0);
         renderFolder(currentPath + encoded + "/");
     }
     if (parent.classList.contains("grid"))
