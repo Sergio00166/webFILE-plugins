@@ -5,8 +5,6 @@ const pathSegments = pathname.split("/");
 if (!pathSegments.pop().includes(".")) pathSegments.push("");
 const basePath = pathSegments.join("/") + "/";
 
-let currentPath = basePath;
-let renderLock = 0;
 const cache_suffix = "?get=cached";
 const ioCallbacks = new Map();
 const focusStack = [];
@@ -33,13 +31,13 @@ function loadImage(img) {
 
 function getJSON(path) {
     return fetch(path + "?get=json")
-      .then(r => r.ok && r.json() || [])
+      .then(res => res.json())
       .catch(() => []);
 }
 
 function getText(path) {
     return fetch(path + cache_suffix)
-      .then(r => r.ok && r.text() || "")
+      .then(res => res.text())
       .catch(() => "");
 }
 
@@ -263,7 +261,6 @@ function filterFolderItems(items) {
 // ============================================================================
 
 async function renderFolder(folderPath, focusBackName) {
-    currentPath = folderPath;
     const items = await getJSON(folderPath);
     const data = filterFolderItems(items);
     
@@ -300,20 +297,22 @@ function handleItemAction(el) {
     const name = nameEl.textContent;
     const encoded = encodeURIComponent(name);
     const parent = el.parentElement;
+    const path = pathElement.textContent;
 
     if (parent.classList.contains("subfolders")) {
         focusStack.push(name);
-        renderFolder(currentPath + encoded + "/");
+        renderFolder(path + encoded + "/");
     }
     if (parent.classList.contains("grid"))
-        window.open(currentPath + encoded, "_blank");
+        window.open(path + encoded, "_blank");
 }
 
 function goBack() {
-    const cur = currentPath.split("/").filter(Boolean);
+    const path = pathElement.textContent;
+    const cur = path.split("/").filter(Boolean);
     const base = basePath.split("/").filter(Boolean);
 
-    if (cur.length <= base.length && currentPath.indexOf(basePath) === 0) {
+    if (cur.length <= base.length && path.indexOf(basePath) === 0) {
         const exitPath = "/" + base.slice(0, -1).join("/");
         if (exitPath === "") window.location.href = "/";
         else window.location.href = exitPath;
