@@ -1,20 +1,15 @@
 /* Code by Sergio00166 */
 
-:root {
-    --card-radius: 16px;
-    --accent: #bb86fc;
-    --bar-bg: #1f1f1f;
-}
 body {
     margin: 0;
     width: 100%;
     height: 100vh;
     height: 100dvh;
-    display: flex;
     color: #eee;
+    display: flex;
     flex-direction: column;
-    background: #121212;
-    font-family: "Segoe UI", sans-serif;
+    background: #111;
+    font-family: system-ui;
     scrollbar-color: #555 #1e1e1e;
     -webkit-tap-highlight-color: transparent;
 }
@@ -35,7 +30,7 @@ img { pointer-events: none; }
     border-radius: 4px;
 }
 .desc-text::-webkit-scrollbar-thumb {
-    background-color: var(--accent);
+    background-color: #bb86fc;
     border-radius: 4px;
 }
 #container::-webkit-scrollbar-track {
@@ -70,7 +65,7 @@ img { pointer-events: none; }
 .subfolders {
 	grid-template-columns:
 	    repeat(auto-fill, minmax(900px, 1fr));
-	}
+}
 .grid {
 	grid-template-columns:
 	    repeat(auto-fill, minmax(400px, 1fr));
@@ -101,14 +96,14 @@ button {
     overflow: hidden;
     flex-direction: column;
     background: #1e1e1e;
-    border-radius: var(--card-radius);
+    border-radius: 16px;
     box-shadow: 0 4px 12px #0008;
 }
 .subfolders > button {
 	min-height: 48px;
+    background: #222;
 	box-shadow: 0 4px 12px #0008;
-	background: var(--bar-bg);
-	border-radius: var(--card-radius);
+	border-radius: 16px;
 }
 
 /* -------------------------
@@ -128,8 +123,8 @@ button {
 .thumb img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
     display: block;
+    object-fit: contain;
     background: #000;
 }
 
@@ -143,8 +138,8 @@ button {
 	display: flex;
     align-items: center;
     background: #1e2c3a;
-    border: 1px solid var(--accent);
-    border-radius: var(--card-radius);
+    border-radius: 16px;
+    border: 1px solid #bb86fc;
 }
 .description > :only-child {
     width: 100%;
@@ -162,8 +157,7 @@ button {
     user-select: text;
     white-space: pre-wrap;
     scrollbar-width: thin;
-    border-radius: inherit;
-	scrollbar-color: var(--accent) transparent;
+	scrollbar-color: #bb86fc transparent;
 }
 
 /* -------------------------
@@ -171,10 +165,10 @@ button {
  *  ------------------------- */
 
 .poster-container {
+    width: 250px;
     height: 250px;
-    min-width: 250px;
     position: relative;
-    border-radius: var(--card-radius);
+    border-radius: inherit;
     overflow: hidden;
     flex-shrink: 0;
 }
