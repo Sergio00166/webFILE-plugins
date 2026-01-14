@@ -5,7 +5,7 @@ const pathSegments = pathname.split("/");
 if (!pathSegments.pop().includes(".")) pathSegments.push("");
 const basePath = pathSegments.join("/") + "/";
 
-const cache_suffix = "?get=cached";
+const cache_suffix = "?get=static";
 const ioCallbacks = new Map();
 const focusStack = [];
 
