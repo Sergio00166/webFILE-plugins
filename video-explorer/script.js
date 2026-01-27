@@ -8,6 +8,7 @@ const basePath = pathSegments.join("/") + "/";
 const cache_suffix = "?get=static";
 const ioCallbacks = new Map();
 const focusStack = [];
+let renderGen = 0;
 
 const container = document.getElementById("container");
 const pathElement = document.getElementById("path-text");
@@ -47,8 +48,13 @@ function getText(path) {
 
 const globalObserver = new IntersectionObserver(entries => {
     for (const entry of entries) {
+        const cb = ioCallbacks.get(entry.target);
+
+        if (!cb) {
+            globalObserver.unobserve(entry.target);
+            continue;
+        }
         if (entry.isIntersecting) {
-            const cb = ioCallbacks.get(entry.target);
             cb(entry.target);
             ioCallbacks.delete(entry.target);
             globalObserver.unobserve(entry.target);
@@ -261,9 +267,15 @@ function filterFolderItems(items) {
 // ============================================================================
 
 async function renderFolder(folderPath, focusBackName) {
+    renderGen = (renderGen + 1) % 1024;
+    const myGen = renderGen;
+
     const items = await getJSON(folderPath);
-    const data = filterFolderItems(items);
+    if (myGen !== renderGen) return;
     
+    ioCallbacks.clear();
+    const data = filterFolderItems(items);
+
     container.innerHTML = "";
     container.classList.remove("show");
     pathElement.textContent = decodeURIComponent(folderPath);
