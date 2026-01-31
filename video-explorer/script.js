@@ -4,6 +4,7 @@ const {pathname} = window.location;
 const pathSegments = pathname.split("/");
 if (!pathSegments.pop().includes(".")) pathSegments.push("");
 const basePath = pathSegments.join("/") + "/";
+let currentPath = basePath;
 
 const cache_suffix = "?get=static";
 const ioCallbacks = new Map();
@@ -18,10 +19,9 @@ const elsel_str = ".grid > button, .subfolders > button";
 // UTILITY FUNCTIONS
 // ============================================================================
 
-function createDiv(className, props) {
+function createDiv(className) {
     const d = document.createElement("div");
     d.className = className;
-    if (props) Object.assign(d, props);
     return d;
 }
 
@@ -278,7 +278,8 @@ async function renderFolder(folderPath, focusBackName) {
 
     container.innerHTML = "";
     container.classList.remove("show");
-    pathElement.textContent = decodeURIComponent(folderPath);
+	currentPath = decodeURIComponent(folderPath);
+    pathElement.textContent = "\u200E" + currentPath + "\u200E";
 
     if (data.selfPoster || data.selfDesc) 
         createDescription(container, data.selfPoster, data.selfDesc);
@@ -309,7 +310,7 @@ function handleItemAction(el) {
     const name = nameEl.textContent;
     const encoded = encodeURIComponent(name);
     const parent = el.parentElement;
-    const path = pathElement.textContent;
+    const path = currentPath;
 
     if (parent.classList.contains("subfolders")) {
         focusStack.push(name);
@@ -320,7 +321,7 @@ function handleItemAction(el) {
 }
 
 function goBack() {
-    const path = pathElement.textContent;
+    const path = currentPath;
     const cur = path.split("/").filter(Boolean);
     const base = basePath.split("/").filter(Boolean);
 
