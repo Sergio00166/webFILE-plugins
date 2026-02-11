@@ -9,7 +9,6 @@ let currentPath = basePath;
 const cache_suffix = "?get=static";
 const ioCallbacks = new Map();
 const focusStack = [];
-let renderGen = 0;
 
 const container = document.getElementById("container");
 const pathElement = document.getElementById("path-text");
@@ -109,7 +108,7 @@ async function loadThumbnail(el, thumbItem) {
 //  DESCRIPTION HELPER
 // ============================================================================
 
-function createDescription(parent, photos, description) {
+function createDescription(parentEl, photos, description) {
     const desc = createDiv("description");
 
     if (photos) {
@@ -126,7 +125,7 @@ function createDescription(parent, photos, description) {
         td.classList.add("loading");
         desc.appendChild(td);
     }
-    parent.appendChild(desc);
+    parentEl.appendChild(desc);
     attachObserver(desc, el => loadFolderInfo(el, photos, description));
 }
 
@@ -134,7 +133,7 @@ function createDescription(parent, photos, description) {
 // SUBFOLDER RENDERING
 // ============================================================================
 
-function renderSubfolder(subfolders, focusBackName, infoMap) {
+function renderSubfolder(parentEl, subfolders, focusBackName, infoMap) {
     const subContainer = createDiv("subfolders");
 
     for (let i = 0; i < subfolders.length; i++) {
@@ -151,36 +150,31 @@ function renderSubfolder(subfolders, focusBackName, infoMap) {
         const out = infoMap.get(subfolder.name);
         if (out) createDescription(el, out[0], out[1]);
     }
-    container.appendChild(subContainer);
+    parentEl.appendChild(subContainer);
 }
 
 // ============================================================================
 // GRID HANDLING
 // ============================================================================
 
-function appendGrid(parent, videos, thumbsMap) {
+function appendGrid(parentEl, videos, thumbsMap) {
     const grid = createDiv("grid");
-    parent.appendChild(grid);
-    let frag = null;
 
     for (let i = 0; i < videos.length; i++) {
-        if (i % 8 === 0) frag = document.createDocumentFragment();
         const v = videos[i];
         const card = document.createElement("button");
         const thumb = createDiv("thumb");
 
-        const thumbItem = thumbsMap.get(v.name.replace(/\.[^/.]+$/, "")) || null;
+        const thumbItem = thumbsMap.get(v.name.replace(/\.[^/.]+$/, ""));
         attachObserver(thumb, el => loadThumbnail(el, thumbItem));
 
         const title = createDiv("title");
         title.textContent = v.name;
         card.appendChild(thumb);
         card.appendChild(title);
-        frag.appendChild(card);
-
-        if (i % 8 === 7 || i === videos.length - 1)
-            grid.appendChild(frag);
+        grid.appendChild(card);
     }
+    parentEl.appendChild(grid);
 }
 
 // ============================================================================
@@ -189,19 +183,21 @@ function appendGrid(parent, videos, thumbsMap) {
 
 async function getThumbsMap(folderPath) {
     const thumbsMap = new Map();
-    const thumbsList = await getJSON(folderPath + ".thumbnails/");
+    const parentPath = folderPath + ".thumbnails/";
+    const thumbsList = await getJSON(parentPath);
 
     for (let i = 0; i < thumbsList.length; i++) {
         const it = thumbsList[i];
         const base = it.name.replace(/\.[^/.]+$/, "");
-        thumbsMap.set(base, it.path);
+        thumbsMap.set(base, parentPath + it.name);
     }
     return thumbsMap;
 }
 
 async function getInfoMap(folderPath) {
     const folderMap = new Map();
-    const infoItems = await getJSON(folderPath + ".info/");
+    const parentPath = folderPath + ".info/";
+    const infoItems = await getJSON(parentPath);
 
     for (const it of infoItems) {
         const elDirPath = it.name.split(".")[0];
@@ -209,11 +205,11 @@ async function getInfoMap(folderPath) {
 
         switch (it.type) {
             case "photo":
-                entry[0] = it.path;
+                entry[0] = parentPath + it.name;
                 break;
             case "text":
                 if (it.name === `${elDirPath}.txt`)
-                    entry[1] = it.path;
+                    entry[1] = parentPath + it.name;
                 break;
         }
         folderMap.set(elDirPath, entry);
@@ -225,7 +221,7 @@ async function getInfoMap(folderPath) {
 // MAIN FILTERING
 // ============================================================================
 
-function filterFolderItems(items) {
+function filterFolderItems(items, path) {
     const data = {
         videos: [],
         selfDesc: "",
@@ -240,11 +236,11 @@ function filterFolderItems(items) {
         switch (item.type) {
             case "photo":
                 if (!data.selfPoster && item.name.startsWith("poster."))
-                    data.selfPoster = item.path;
+                    data.selfPoster = path + item.name;
                 break;
             case "text":
                 if (!data.selfDesc && item.name === "description.txt")
-                    data.selfDesc = item.path;
+                    data.selfDesc = path + item.name;
                 break;
             case "video":
                 data.videos.push(item);
@@ -267,37 +263,34 @@ function filterFolderItems(items) {
 // ============================================================================
 
 async function renderFolder(folderPath, focusBackName) {
-    renderGen = (renderGen + 1) % 1024;
-    const myGen = renderGen;
+    ioCallbacks.clear();
+    currentPath = folderPath;
+    container.classList.remove("show");
 
     const items = await getJSON(folderPath);
-    if (myGen !== renderGen) return;
-    
-    ioCallbacks.clear();
-    const data = filterFolderItems(items);
-
-    container.innerHTML = "";
-    container.classList.remove("show");
-	currentPath = decodeURIComponent(folderPath);
-    pathElement.textContent = "\u200E" + currentPath + "\u200E";
+    const data = filterFolderItems(items, folderPath);
+    const frag = document.createDocumentFragment();
 
     if (data.selfPoster || data.selfDesc) 
-        createDescription(container, data.selfPoster, data.selfDesc);
+        createDescription(frag, data.selfPoster, data.selfDesc);
 
     if (data.videos.length) {
         let thumbsMap = new Map();
         if (data.hasDotThumbs) thumbsMap = await getThumbsMap(folderPath);
-        appendGrid(container, data.videos, thumbsMap);
+        appendGrid(frag, data.videos, thumbsMap);
     }
     if (data.subfolders.length) {
         let infoMap = new Map();
         if (data.hasDotInfo) infoMap = await getInfoMap(folderPath);
-        renderSubfolder(data.subfolders, focusBackName, infoMap);
+        renderSubfolder(frag, data.subfolders, focusBackName, infoMap);
     }
     const focusEl = document.getElementById("focused");
     if (focusEl) focusEl.focus();
     else container.scrollTo(0, 0);
 
+    pathStr = decodeURIComponent(folderPath);
+    pathElement.textContent = `\u200E${pathStr}\u200E`;
+    container.replaceChildren(frag);
     container.classList.add("show");
 }
 
@@ -425,6 +418,6 @@ document.addEventListener("keydown", event => {
 // INIT
 // ============================================================================
 
-renderFolder(basePath);
+renderFolder(currentPath);
 
  
