@@ -264,7 +264,6 @@ function filterFolderItems(items, path) {
 
 async function renderFolder(folderPath, focusBackName) {
     ioCallbacks.clear();
-    currentPath = folderPath;
     container.classList.remove("show");
 
     const items = await getJSON(folderPath);
@@ -284,13 +283,14 @@ async function renderFolder(folderPath, focusBackName) {
         if (data.hasDotInfo) infoMap = await getInfoMap(folderPath);
         renderSubfolder(frag, data.subfolders, focusBackName, infoMap);
     }
-    const focusEl = document.getElementById("focused");
-    if (focusEl) focusEl.focus();
-    else container.scrollTo(0, 0);
-
+    currentPath = folderPath;
     pathStr = decodeURIComponent(folderPath);
     pathElement.textContent = `\u200E${pathStr}\u200E`;
     container.replaceChildren(frag);
+
+    const focusEl = document.getElementById("focused");
+    if (focusEl) focusEl.focus();
+    else container.scrollTo(0, 0);
     container.classList.add("show");
 }
 
