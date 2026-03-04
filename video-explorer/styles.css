@@ -54,7 +54,7 @@ img { pointer-events: none; }
     -webkit-user-select: none;
     user-select: none;
 }
-#container.show{
+#container.show {
 	transition: opacity 0.2s;
 	opacity: 1;
 }
@@ -98,12 +98,17 @@ button {
     background: #1e1e1e;
     border-radius: 16px;
     box-shadow: 0 4px 12px #0008;
+    pointer-events: none;
 }
 .subfolders > button {
 	min-height: 48px;
     background: #222;
 	box-shadow: 0 4px 12px #0008;
 	border-radius: 16px;
+    pointer-events: none;
+}
+#container.show button {
+    pointer-events: auto;
 }
 
 /* -------------------------

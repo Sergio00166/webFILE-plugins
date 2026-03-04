@@ -263,8 +263,8 @@ function filterFolderItems(items, path) {
 // ============================================================================
 
 async function renderFolder(folderPath, focusBackName) {
-    ioCallbacks.clear();
     container.classList.remove("show");
+    ioCallbacks.clear();
 
     const items = await getJSON(folderPath);
     const data = filterFolderItems(items, folderPath);
