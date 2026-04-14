@@ -18,10 +18,13 @@ const elsel_str = ".grid > button, .subfolders > button";
 // UTILITY FUNCTIONS
 // ============================================================================
 
-function createDiv(className) {
-    const d = document.createElement("div");
-    d.className = className;
-    return d;
+function escapeHTML(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function resetPage() {
+    window.location.hash = "";
+    renderFolder(basePath);
 }
 
 function loadImage(img) {
@@ -59,7 +62,7 @@ const globalObserver = new IntersectionObserver(entries => {
             globalObserver.unobserve(entry.target);
         }
     }
-},{ rootMargin: "200px" });
+}, { rootMargin: "200px" });
 
 function attachObserver(el, callback) {
     ioCallbacks.set(el, callback);
@@ -67,7 +70,7 @@ function attachObserver(el, callback) {
 }
 
 // ============================================================================
-//  ITEM LOADERS
+// ITEM LOADERS
 // ============================================================================
 
 async function loadFolderInfo(el, poster, description) {
@@ -80,9 +83,7 @@ async function loadFolderInfo(el, poster, description) {
         bimg.src = poster + cache_suffix;
         pimg.src = poster + cache_suffix;
 
-        await Promise.all(
-            [loadImage(bimg), loadImage(pimg)]
-        );
+        await Promise.all([loadImage(bimg), loadImage(pimg)]);
         pbg.appendChild(bimg);
         pc.classList.remove("loading");
     }
@@ -98,83 +99,60 @@ async function loadThumbnail(el, thumbItem) {
     el.classList.add("loading");
     if (!thumbItem) return;
     const img = new Image();
-    img.src = thumbItem + cache_suffix;
+    img.src = thumbItem;
     el.appendChild(img);
     await loadImage(img);
     el.classList.remove("loading");
 }
 
 // ============================================================================
-//  DESCRIPTION HELPER
+// HTML BUILDERS
 // ============================================================================
 
-function createDescription(parentEl, photos, description) {
-    const desc = createDiv("description");
-
-    if (photos) {
-        const pc = createDiv("poster-container loading");
-        const pbg = createDiv("poster-background");
-        const pimg = document.createElement("img");
-        pimg.className = "poster-image";
-        pc.appendChild(pbg);
-        pc.appendChild(pimg);
-        desc.appendChild(pc);
-    }
-    if (description) {
-        const td = createDiv("desc-text");
-        td.classList.add("loading");
-        desc.appendChild(td);
-    }
-    parentEl.appendChild(desc);
-    attachObserver(desc, el => loadFolderInfo(el, photos, description));
+function buildDescriptionHTML(photos, description) {
+    const parts = ['<div class="description"'];
+    if (photos)      parts.push(` data-poster="${escapeHTML(photos)}"`);
+    if (description) parts.push(` data-desc="${escapeHTML(description)}"`);
+    parts.push('>');
+    if (photos)      parts.push('<div class="poster-container loading"><div class="poster-background"></div><img class="poster-image"></div>');
+    if (description) parts.push('<div class="desc-text loading"></div>');
+    parts.push('</div>');
+    return parts.join('');
 }
 
-// ============================================================================
-// SUBFOLDER RENDERING
-// ============================================================================
-
-function renderSubfolder(parentEl, subfolders, focusBackName, infoMap) {
-    const subContainer = createDiv("subfolders");
-
-    for (let i = 0; i < subfolders.length; i++) {
-        const subfolder = subfolders[i];
-        const el = document.createElement("button");
-
-        if (subfolder.name === focusBackName) el.id = "focused";
-        subContainer.appendChild(el);
-
-        const title = createDiv("title");
-        title.textContent = subfolder.name;
-        el.appendChild(title);
-
-        const out = infoMap.get(subfolder.name);
-        if (out) createDescription(el, out[0], out[1]);
-    }
-    parentEl.appendChild(subContainer);
-}
-
-// ============================================================================
-// GRID HANDLING
-// ============================================================================
-
-function appendGrid(parentEl, videos, thumbsMap) {
-    const grid = createDiv("grid");
+function buildGridHTML(videos, thumbsMap) {
+    const parts = ['<div class="grid">'];
 
     for (let i = 0; i < videos.length; i++) {
         const v = videos[i];
-        const card = document.createElement("button");
-        const thumb = createDiv("thumb");
-
         const thumbItem = thumbsMap.get(v.name.replace(/\.[^/.]+$/, ""));
-        attachObserver(thumb, el => loadThumbnail(el, thumbItem));
-
-        const title = createDiv("title");
-        title.textContent = v.name;
-        card.appendChild(thumb);
-        card.appendChild(title);
-        grid.appendChild(card);
+        const thumbAttr = `data-thumb="${escapeHTML((thumbItem || '') + cache_suffix)}"`;
+        parts.push(
+            '<button>',
+            `<div class="thumb" ${thumbAttr}></div>`,
+            `<div class="title">${escapeHTML(v.name)}</div>`,
+            '</button>'
+        );
     }
-    parentEl.appendChild(grid);
+    parts.push('</div>');
+    return parts.join('');
+}
+
+function buildSubfoldersHTML(subfolders, focusBackName, infoMap) {
+    const parts = ['<div class="subfolders">'];
+
+    for (let i = 0; i < subfolders.length; i++) {
+        const subfolder = subfolders[i];
+        const out = infoMap.get(subfolder.name);
+        parts.push(
+            `<button${subfolder.name === focusBackName && ' id="focused"' || ''}>`,
+            `<div class="title">${escapeHTML(subfolder.name)}</div>`,
+            out && buildDescriptionHTML(out[0], out[1]) || '',
+            '</button>'
+        );
+    }
+    parts.push('</div>');
+    return parts.join('');
 }
 
 // ============================================================================
@@ -188,8 +166,7 @@ async function getThumbsMap(folderPath) {
 
     for (let i = 0; i < thumbsList.length; i++) {
         const it = thumbsList[i];
-        const base = it.name.replace(/\.[^/.]+$/, "");
-        thumbsMap.set(base, parentPath + it.name);
+        thumbsMap.set(it.name.replace(/\.[^/.]+$/, ""), parentPath + it.name);
     }
     return thumbsMap;
 }
@@ -232,7 +209,7 @@ function filterFolderItems(items, path) {
     };
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        
+
         switch (item.type) {
             case "photo":
                 if (!data.selfPoster && item.name.startsWith("poster."))
@@ -250,7 +227,7 @@ function filterFolderItems(items, path) {
                     data.hasDotInfo = true;
                 else if (item.name === ".thumbnails")
                     data.hasDotThumbs = true;
-                else 
+                else
                     data.subfolders.push(item);
                 break;
         }
@@ -262,35 +239,53 @@ function filterFolderItems(items, path) {
 // FOLDER RENDERER
 // ============================================================================
 
-async function renderFolder(folderPath, focusBackName) {
-    container.classList.remove("show");
-    ioCallbacks.clear();
-
+async function generateHTML(folderPath, focusBackName) {
     const items = await getJSON(folderPath);
     const data = filterFolderItems(items, folderPath);
-    const frag = document.createDocumentFragment();
+    const parts = [];
 
-    if (data.selfPoster || data.selfDesc) 
-        createDescription(frag, data.selfPoster, data.selfDesc);
+    if (data.selfPoster || data.selfDesc)
+        parts.push(buildDescriptionHTML(data.selfPoster, data.selfDesc));
 
     if (data.videos.length) {
         let thumbsMap = new Map();
         if (data.hasDotThumbs) thumbsMap = await getThumbsMap(folderPath);
-        appendGrid(frag, data.videos, thumbsMap);
+        parts.push(buildGridHTML(data.videos, thumbsMap));
     }
     if (data.subfolders.length) {
         let infoMap = new Map();
         if (data.hasDotInfo) infoMap = await getInfoMap(folderPath);
-        renderSubfolder(frag, data.subfolders, focusBackName, infoMap);
-    }
-    currentPath = folderPath;
-    pathStr = decodeURIComponent(folderPath);
-    pathElement.textContent = `\u200E${pathStr}\u200E`;
-    container.replaceChildren(frag);
+        parts.push(buildSubfoldersHTML(data.subfolders, focusBackName, infoMap));
+    }   
+    return parts;
+}
 
+function finalizeRenderedFolder() {
+    for (const desc of container.querySelectorAll('.description')) {
+        const poster   = desc.dataset.poster || null;
+        const descPath = desc.dataset.desc   || null;
+        attachObserver(desc, el => loadFolderInfo(el, poster, descPath));
+    }
+    for (const thumb of container.querySelectorAll('.grid .thumb')) {
+        attachObserver(thumb, el => loadThumbnail(el, thumb.dataset.thumb || null));
+    }
     const focusEl = document.getElementById("focused");
     if (focusEl) focusEl.focus();
     else container.scrollTo(0, 0);
+}
+
+async function renderFolder(folderPath, focusBackName) {
+    ioCallbacks.clear();
+    container.classList.remove("show");
+    const parts = await generateHTML(folderPath, focusBackName);
+
+    currentPath = folderPath;
+    pathStr = decodeURIComponent(folderPath);
+    pathElement.textContent = `\u200E${pathStr}\u200E`;
+    window.location.hash = folderPath.slice(basePath.length, -1);
+
+    container.innerHTML = parts.join('');
+    finalizeRenderedFolder();
     container.classList.add("show");
 }
 
@@ -337,15 +332,9 @@ function moveFocus(direction) {
     let idx = focusable.indexOf(document.activeElement);
 
     switch (direction) {
-        case -Infinity:
-            idx = 0;
-            break;
-        case Infinity:
-            idx = focusable.length - 1;
-            break;
-        default:
-            idx = (idx + direction + focusable.length) % focusable.length;
-            break;
+        case -Infinity: idx = 0; break;
+        case  Infinity: idx = focusable.length - 1; break;
+        default: idx = (idx + direction + focusable.length) % focusable.length; break;
     }
     focusable[idx].focus();
 }
@@ -365,30 +354,23 @@ container.addEventListener("keydown", event => {
 
 document.addEventListener("mouseup", event => {
     switch (event.button) {
-        case 3:
-            event.preventDefault();
-            goBack();
-            break;
-        case 4:
-            event.preventDefault();
-            document.activeElement.click();
-            break;
-        default:
-            break;
+        case 3: event.preventDefault(); goBack(); break;
+        case 4: event.preventDefault(); document.activeElement.click(); break;
+        default: break;
     }
 });
 
 document.addEventListener("keydown", event => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-	let delta = 1;
+    let delta = 1;
 
     switch (event.key.toLowerCase()) {
-		case "arrowup": delta -= 2;
+        case "arrowup": delta -= 2;
         case "arrowdown":
-			event.preventDefault();
-			const el = event.target.closest(".desc-text");
-			if (!el) moveFocus(delta);
-			else el.scrollTop += delta * 16;
+            event.preventDefault();
+            const el = event.target.closest(".desc-text");
+            if (!el) moveFocus(delta);
+            else el.scrollTop += delta * 16;
             break;
 
         case "home": delta -= 2;
@@ -418,6 +400,16 @@ document.addEventListener("keydown", event => {
 // INIT
 // ============================================================================
 
-renderFolder(currentPath);
+(async () => {
+    if (!window.location.hash) renderFolder(basePath);
+    else {   
+        const savedPath = window.location.hash.slice(1);
+        currentPath = `${basePath}${savedPath}/`;
+        // Fallback when the saved path is just invalid
+        const res = await fetch(`${currentPath}?get=json`, { method: "HEAD" })
+        if (!res.ok) resetPage();
+        else renderFolder(currentPath);
+    }
+})();
 
  
