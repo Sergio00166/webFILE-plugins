@@ -406,7 +406,7 @@ document.addEventListener("keydown", event => {
         const savedPath = window.location.hash.slice(1);
         currentPath = `${basePath}${savedPath}/`;
         // Fallback when the saved path is just invalid
-        const res = await fetch(`${currentPath}?get=json`, { method: "HEAD" })
+        const res = await fetch(`${currentPath}?get=json`, { method: "HEAD" });
         if (!res.ok) resetPage();
         else renderFolder(currentPath);
     }
