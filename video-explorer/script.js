@@ -19,7 +19,12 @@ const elsel_str = ".grid > button, .subfolders > button";
 // ============================================================================
 
 function escapeHTML(str) {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
 function resetPage() {
@@ -50,19 +55,24 @@ function getText(path) {
 
 const globalObserver = new IntersectionObserver(entries => {
     for (const entry of entries) {
-        const cb = ioCallbacks.get(entry.target);
+        const el = entry.target;
 
-        if (!cb) {
-            globalObserver.unobserve(entry.target);
+        if (!entry.isIntersecting) {
+            el.classList.remove("animate");
             continue;
         }
-        if (entry.isIntersecting) {
-            cb(entry.target);
-            ioCallbacks.delete(entry.target);
-            globalObserver.unobserve(entry.target);
-        }
+        el.classList.add("animate");
+
+        const cb = ioCallbacks.get(el);
+        if (!ioCallbacks.delete(el)) continue;
+
+        cb(el).then(() => {
+            globalObserver.unobserve(el);
+            el.classList.remove("animate");
+            el.classList.remove("loading");
+        });
     }
-}, { rootMargin: "200px" });
+},{ root: container, rootMargin: "10%"});
 
 function attachObserver(el, callback) {
     ioCallbacks.set(el, callback);
@@ -78,31 +88,25 @@ async function loadFolderInfo(el, poster, description) {
         const pc = el.querySelector(".poster-container");
         const pbg = pc.querySelector(".poster-background");
         const pimg = pc.querySelector(".poster-image");
-
         const bimg = new Image();
         bimg.src = poster + cache_suffix;
         pimg.src = poster + cache_suffix;
 
         await Promise.all([loadImage(bimg), loadImage(pimg)]);
         pbg.appendChild(bimg);
-        pc.classList.remove("loading");
     }
     if (description) {
         const td = el.querySelector(".desc-text");
-        const t = await getText(description);
-        td.innerHTML = t;
-        td.classList.remove("loading");
+        td.textContent = await getText(description);
     }
 }
 
 async function loadThumbnail(el, thumbItem) {
-    el.classList.add("loading");
     if (!thumbItem) return;
     const img = new Image();
     img.src = thumbItem;
-    el.appendChild(img);
     await loadImage(img);
-    el.classList.remove("loading");
+    el.appendChild(img);
 }
 
 // ============================================================================
@@ -110,12 +114,12 @@ async function loadThumbnail(el, thumbItem) {
 // ============================================================================
 
 function buildDescriptionHTML(photos, description) {
-    const parts = ['<div class="description"'];
+    const parts = ['<div class="description loading"'];
     if (photos)      parts.push(` data-poster="${escapeHTML(photos)}"`);
     if (description) parts.push(` data-desc="${escapeHTML(description)}"`);
     parts.push('>');
-    if (photos)      parts.push('<div class="poster-container loading"><div class="poster-background"></div><img class="poster-image"></div>');
-    if (description) parts.push('<div class="desc-text loading"></div>');
+    if (photos)      parts.push('<div class="poster-container"><div class="poster-background"></div><img class="poster-image"></div>');
+    if (description) parts.push('<div class="desc-text"></div>');
     parts.push('</div>');
     return parts.join('');
 }
@@ -129,7 +133,7 @@ function buildGridHTML(videos, thumbsMap) {
         const thumbAttr = `data-thumb="${escapeHTML((thumbItem || '') + cache_suffix)}"`;
         parts.push(
             '<button>',
-            `<div class="thumb" ${thumbAttr}></div>`,
+            `<div class="thumb loading" ${thumbAttr}></div>`,
             `<div class="title">${escapeHTML(v.name)}</div>`,
             '</button>'
         );

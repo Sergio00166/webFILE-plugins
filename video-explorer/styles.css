@@ -201,33 +201,36 @@ button {
  *  Keyframes / animations
  *  ------------------------- */
 
-.desc-text.loading,
-.poster-container.loading {
+.thumb.loading::before {
+    inset: 0;
+    content: "";
+    position: absolute;
+    background: linear-gradient(
+        90deg, #444 25%,
+        #555 50%, #444 75%
+    );
     border-radius: inherit;
+    background-size: 200% 100%;
+}
+.description.loading > .desc-text,
+.description.loading > .poster-container {
     background: linear-gradient(
         90deg, #2c3e50 0%, 
         #34495e 20%, #3b5770 40%,
         #34495e 60%, #2c3e50 100%
     );
-    background-size: 200% 100%;
-    animation: loadingAnim 1.5s infinite;
-}
-.thumb.loading::before {
-    inset: 0;
-    content: "";
-    position: absolute;
     border-radius: inherit;
-    background: linear-gradient(
-        90deg, #444 25%,
-        #555 50%, #444 75%
-    );
     background-size: 200% 100%;
-    animation: loadingAnim 1.5s infinite;
 }
-.loading > * {
+.loading img {
     visibility: hidden;
 }
-@keyframes loadingAnim {
+.thumb.animate::before,
+.description.animate > .desc-text,
+.description.animate > .poster-container {
+    animation: loadingAnimation 1.5s infinite;
+}
+@keyframes loadingAnimation {
     0%   { background-position:  200% 0; }
     100% { background-position: -200% 0; }
 }
