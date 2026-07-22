@@ -53,34 +53,24 @@ function getText(path) {
 // INTERSECTION OBSERVER (lazy loading)
 // ============================================================================
 
-const globalObserver = new IntersectionObserver(entries => {
+const loadingObserver = new IntersectionObserver(entries => {
     for (const entry of entries) {
         const el = entry.target;
+        if (!entry.isIntersecting) continue;
 
-        if (!entry.isIntersecting) {
-            el.classList.remove("animate");
-            continue;
-        }
-        el.classList.add("animate");
-
-        const cb = ioCallbacks.get(el);
-        if (!ioCallbacks.delete(el)) continue;
-
-        cb(el).then(() => {
-            globalObserver.unobserve(el);
-            el.classList.remove("animate");
-            el.classList.remove("loading");
-        });
+        ioCallbacks.get(el)(el);
+        ioCallbacks.delete(el);
+        loadingObserver.unobserve(el);
     }
-},{ root: container, rootMargin: "10%"});
+},{ root: container, rootMargin: "100%" });
 
 function attachObserver(el, callback) {
     ioCallbacks.set(el, callback);
-    globalObserver.observe(el);
+    loadingObserver.observe(el);
 }
 
 // ============================================================================
-// ITEM LOADERS
+// ITEM LOADERS CALLBACKS
 // ============================================================================
 
 async function loadFolderInfo(el, poster, description) {
@@ -99,6 +89,7 @@ async function loadFolderInfo(el, poster, description) {
         const td = el.querySelector(".desc-text");
         td.textContent = await getText(description);
     }
+    el.classList.remove("loading");
 }
 
 async function loadThumbnail(el, thumbItem) {
@@ -107,6 +98,7 @@ async function loadThumbnail(el, thumbItem) {
     img.src = thumbItem;
     await loadImage(img);
     el.appendChild(img);
+    el.classList.remove("loading");
 }
 
 // ============================================================================
@@ -265,13 +257,17 @@ async function generateHTML(folderPath, focusBackName) {
 }
 
 function finalizeRenderedFolder() {
-    for (const desc of container.querySelectorAll('.description')) {
-        const poster   = desc.dataset.poster || null;
-        const descPath = desc.dataset.desc   || null;
-        attachObserver(desc, el => loadFolderInfo(el, poster, descPath));
+    for (const el of container.querySelectorAll('.description')) {
+        const poster   = el.dataset.poster || null;
+        const descPath = el.dataset.desc   || null;
+        attachObserver(el, el => loadFolderInfo(el, poster, descPath));
+        delete el.dataset.poster;
+        delete el.dataset.desc;
     }
-    for (const thumb of container.querySelectorAll('.grid .thumb')) {
-        attachObserver(thumb, el => loadThumbnail(el, thumb.dataset.thumb || null));
+    for (const el of container.querySelectorAll('.grid .thumb')) {
+        const thumbnail = el.dataset.thumb || null;
+        attachObserver(el, el => loadThumbnail(el, thumbnail));
+        delete el.dataset.thumb;
     }
     const focusEl = document.getElementById("focused");
     if (focusEl) focusEl.focus();

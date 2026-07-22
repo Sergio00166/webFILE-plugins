@@ -17,7 +17,7 @@ img { pointer-events: none; }
 
 /* -------------------------
  *  SCROLL BARS
- *  ------------------------- */
+ * ------------------------- */
 
 #container::-webkit-scrollbar {
     width: 9px; height: 9px;
@@ -39,7 +39,7 @@ img { pointer-events: none; }
 
 /* -------------------------
  *  Main structure
- *  ------------------------- */
+ * ------------------------- */
 
 #container {
     gap: 16px;
@@ -81,7 +81,7 @@ button {
 
 /* -------------------------
  *  Main elements
- *  ------------------------- */
+ * ------------------------- */
 
 .title {
     padding: 8px;
@@ -113,7 +113,7 @@ button {
 
 /* -------------------------
  *  Thumbnails
- *  ------------------------- */
+ * ------------------------- */
 
 .thumb {
     width: 100%;
@@ -135,7 +135,7 @@ button {
 
 /* -------------------------
  *  Folder description
- *  ------------------------- */
+ * ------------------------- */
 
 .description {
     gap: 36px;
@@ -167,7 +167,7 @@ button {
 
 /* -------------------------
  *  Poster container & image
- *  ------------------------- */
+ * ------------------------- */
 
 .poster-container {
     width: 250px;
@@ -178,7 +178,8 @@ button {
     flex-shrink: 0;
 }
 .poster-background {
-    inset: 0;
+    top: 0; bottom: 0;
+    left: 0; right: 0;
     position: absolute;
 }
 .poster-background img {
@@ -199,45 +200,42 @@ button {
 
 /* -------------------------
  *  Keyframes / animations
- *  ------------------------- */
+ * ------------------------- */
 
-.thumb.loading::before {
-    inset: 0;
-    content: "";
-    position: absolute;
-    background: linear-gradient(
-        90deg, #444 25%,
-        #555 50%, #444 75%
-    );
-    border-radius: inherit;
-    background-size: 200% 100%;
-}
 .description.loading > .desc-text,
-.description.loading > .poster-container {
-    background: linear-gradient(
-        90deg, #2c3e50 0%, 
-        #34495e 20%, #3b5770 40%,
-        #34495e 60%, #2c3e50 100%
-    );
+.description.loading > .poster-container,
+.thumb.loading {
+    background: #2c3e50;
     border-radius: inherit;
-    background-size: 200% 100%;
+    overflow: hidden;
 }
-.loading img {
-    visibility: hidden;
-}
-.thumb.animate::before,
-.description.animate > .desc-text,
-.description.animate > .poster-container {
-    animation: loadingAnimation 1.5s infinite;
+.thumb.loading { background: #444; }
+.loading img { visibility: hidden; }
+
+.description.loading > .desc-text::after,
+.description.loading > .poster-container::after,
+.thumb.loading::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 0; right: 0;
+ 
+    background: linear-gradient(
+        90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: loadingAnimation 1s infinite;
 }
 @keyframes loadingAnimation {
-    0%   { background-position:  200% 0; }
-    100% { background-position: -200% 0; }
+    100% { transform: translateX(100%); }
 }
 
 /* -------------------------
  *  Responsive
- *  ------------------------- */
+ * ------------------------- */
 
 @media (max-width: 960px) {
 	.subfolders { grid-template-columns: repeat(1,1fr);	}
@@ -274,7 +272,7 @@ button {
 
 /* -------------------------
  *  Hover & focus
- *  ------------------------- */
+ * ------------------------- */
 
 @media (hover: hover) {
     .subfolders > button:hover,
